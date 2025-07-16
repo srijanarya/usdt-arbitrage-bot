@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor Quick Start - USDT Arbitrage Bot</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .step {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .step:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .step-number {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .command {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background: #764ba2;
+        }
+        .shortcut {
+            display: inline-block;
+            background: #e0e0e0;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 0 3px;
+        }
+        .tip {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .progress {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .progress-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+        .progress-item.completed {
+            border-color: #4caf50;
+            background: #e8f5e9;
+        }
+        .ai-prompt {
+            background: #f0f7ff;
+            border: 2px dashed #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Cursor Quick Start Guide</h1>
+        <p>Build Your USDT Arbitrage Bot with AI-Powered Development</p>
+    </div>
+
+    <div class="tip">
+        <strong>🎯 Goal:</strong> Get your arbitrage bot running in Cursor within 30 minutes using AI commands!
+    </div>
+
+    <div class="step">
+        <h2><span class="step-number">1</span>Open Terminal in Cursor</h2>
+        <p>Press <span class="shortcut">Ctrl + `</span> to open the integrated terminal</p>
+        <div class="command">
+            cd /Users/srijan/Desktop/usdt-arbitrage-bot
+            ./quick-setup.sh
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+        </div>
+        <p>This installs Node.js and PostgreSQL if needed (takes 2-3 minutes)</p>
+    </div>
+
+    <div class="step">
+        <h2><span class="step-number">2</span>Initialize Project</h2>
+        <p>Still in terminal, run these commands:</p>
+        <div class="command">
+            npm init -y
+            npm install express axios ws pg dotenv
+            npm install -D typescript @types/node @types/express @types/ws @types/pg nodemon ts-node
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+        </div>
+    </div>
+
+    <div class="step">
+        <h2><span class="step-number">3</span>Create Project Structure</h2>
+        <div class="command">
+            mkdir -p src/{api/exchanges,services,config,models,utils}
+            touch src/index.ts .env .gitignore tsconfig.json
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+        </div>
+    </div>
+
+    <div class="step">
+        <h2><span class="step-number">4</span>Generate tsconfig.json with AI</h2>
+        <p>Open <code>tsconfig.json</code> and press <span class="shortcut">Cmd + K</span></p>
+        <div class="ai-prompt">
+            Create a TypeScript configuration for Node.js with ES2020 target, strict mode, and proper module resolution for a crypto trading bot
+        </div>
+    </div>
+
+    <div class="step">
+        <h2><span class="step-number">5</span>Create Main Server File</h2>
+        <p>Open <code>src/index.ts</code> and press <span class="shortcut">Cmd + K</span></p>
+        <div class="ai-prompt">
+            Create an Express + WebSocket server for crypto arbitrage with health endpoints, error handling, and graceful shutdown
+        </div>
+    </div>
+
+    <div class="step">
+        <h2><span class="step-number">6</span>Generate Exchange Clients</h2>
+        <p>Create <code>src/api/exchanges/coinDCX.ts</code> and use <span class="shortcut">Cmd + K</span>:</p>
+        <div class="ai-prompt">
+            Create CoinDCX API client with WebSocket for USDT/INR real-time prices, HMAC auth, reconnection logic, and rate limiting
+        </div>
+        <p>Then create <code>src/api/exchanges/zebPay.ts</code>:</p>
+        <div class="ai-prompt">
+            Create ZebPay API client with REST polling for USDT/INR, authentication, and rate limiting
+        </div>
+    </div>
+
+    <div class="step">
+        <h2><span class="step-number">7</span>Build Arbitrage Scanner</h2>
+        <p>Create <code>src/services/priceScanner.ts</code> and press <span class="shortcut">Cmd + K</span>:</p>
+        <div class="ai-prompt">
+            Create arbitrage scanner that monitors multiple exchanges, detects opportunities after fees and 1% TDS, stores in PostgreSQL, and emits events
+        </div>
+    </div>
+
+    <div class="step">
+        <h2><span class="step-number">8</span>Setup Environment</h2>
+        <p>Create <code>.env</code> file:</p>
+        <div class="command">
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=arbitrage_bot
+DB_USER=postgres
+DB_PASSWORD=
+
+# APIs (get from exchange websites)
+COINDCX_API_KEY=
+COINDCX_API_SECRET=
+ZEBPAY_API_KEY=
+ZEBPAY_API_SECRET=
+
+# Trading
+MIN_PROFIT_THRESHOLD=100
+PORT=3000
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+        </div>
+    </div>
+
+    <div class="step">
+        <h2><span class="step-number">9</span>Add NPM Scripts</h2>
+        <p>In <code>package.json</code>, update the scripts section:</p>
+        <div class="command">
+"scripts": {
+  "dev": "nodemon --exec ts-node src/index.ts",
+  "build": "tsc",
+  "start": "node dist/index.js"
+}
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+        </div>
+    </div>
+
+    <div class="step">
+        <h2><span class="step-number">10</span>Start Development!</h2>
+        <div class="command">
+            npm run dev
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+        </div>
+        <p>Your server should start on port 3000! 🎉</p>
+    </div>
+
+    <div class="tip">
+        <h3>⚡ Cursor Power Tips:</h3>
+        <ul>
+            <li><span class="shortcut">Tab</span> - Accept AI suggestions</li>
+            <li><span class="shortcut">Cmd + K</span> - Generate/edit code with AI</li>
+            <li><span class="shortcut">Cmd + L</span> - Chat with AI about your code</li>
+            <li>Right-click errors → "Fix with AI"</li>
+            <li>Select code → <span class="shortcut">Cmd + K</span> → "Add error handling"</li>
+        </ul>
+    </div>
+
+    <div class="progress">
+        <h3 style="grid-column: 1/-1;">Week 1 Progress Tracker:</h3>
+        <div class="progress-item">✅ Project Setup</div>
+        <div class="progress-item">⏳ API Integration</div>
+        <div class="progress-item">⏳ Arbitrage Logic</div>
+        <div class="progress-item">⏳ Database Schema</div>
+        <div class="progress-item">⏳ Price Monitoring</div>
+        <div class="progress-item">⏳ Alert System</div>
+    </div>
+
+    <script>
+        function copyToClipboard(button) {
+            const command = button.parentElement.textContent.replace('Copy', '').trim();
+            navigator.clipboard.writeText(command).then(() => {
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
