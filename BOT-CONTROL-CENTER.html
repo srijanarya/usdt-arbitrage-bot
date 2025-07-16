@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USDT Arbitrage Bot Control Center</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #0f0f0f;
+            --card: #1a1a1a;
+            --card-hover: #252525;
+            --text: #e0e0e0;
+            --text-dim: #999;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: var(--card);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .bot-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--card-hover);
+            border-radius: 20px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.active {
+            background: var(--success);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .control-panel {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-label {
+            color: var(--text-dim);
+            font-size: 0.9em;
+        }
+
+        input, select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            background: var(--card-hover);
+            color: var(--text);
+            font-size: 1em;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 0.9em;
+        }
+
+        .opportunities-section {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .opportunity-filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background: var(--card-hover);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .opportunities-list {
+            display: grid;
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .opportunity-card {
+            background: var(--card-hover);
+            border-radius: 10px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .opportunity-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary);
+        }
+
+        .opportunity-card.high-profit::before {
+            background: var(--warning);
+            animation: glow 1s infinite;
+        }
+
+        .opportunity-card.executing::before {
+            background: var(--success);
+        }
+
+        @keyframes glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .opportunity-info {
+            display: grid;
+            gap: 10px;
+        }
+
+        .opportunity-route {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .opportunity-details {
+            display: flex;
+            gap: 15px;
+            color: var(--text-dim);
+            font-size: 0.9em;
+        }
+
+        .opportunity-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+
+        .profit-display {
+            text-align: right;
+        }
+
+        .profit-percentage {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--success);
+        }
+
+        .profit-amount {
+            color: var(--text-dim);
+        }
+
+        .execute-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background: var(--success);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .execute-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .execute-btn:disabled {
+            background: var(--text-dim);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .trades-section {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .trade-item {
+            background: var(--card-hover);
+            border-radius: 8px;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .trade-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .trade-status.completed {
+            background: var(--success);
+        }
+
+        .trade-status.failed {
+            background: var(--danger);
+        }
+
+        .trade-status.executing {
+            background: var(--warning);
+            animation: pulse 1s infinite;
+        }
+
+        .logs-section {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 25px;
+        }
+
+        .log-window {
+            background: #000;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+
+        .log-entry.info {
+            color: #3498db;
+        }
+
+        .log-entry.success {
+            color: #27ae60;
+        }
+
+        .log-entry.warning {
+            color: #f39c12;
+        }
+
+        .log-entry.error {
+            color: #e74c3c;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            font-size: 1.5em;
+            cursor: pointer;
+            color: var(--text-dim);
+        }
+
+        .close-btn:hover {
+            color: var(--text);
+        }
+
+        @media (max-width: 768px) {
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .opportunity-card {
+                grid-template-columns: 1fr;
+            }
+            
+            .trade-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>USDT Arbitrage Bot Control Center</h1>
+        <p>Comprehensive Trading Bot Management</p>
+        <div class="bot-status">
+            <div class="status-indicator">
+                <div class="status-dot" id="botStatusDot"></div>
+                <span id="botStatusText">Bot Offline</span>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot" id="wsStatusDot"></div>
+                <span>WebSocket: <span id="wsStatusText">Disconnected</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <h2>Bot Controls</h2>
+        <div class="control-grid">
+            <div class="control-item">
+                <label class="control-label">Min Profit %</label>
+                <input type="number" id="minProfit" value="1.0" min="0" max="10" step="0.1">
+            </div>
+            <div class="control-item">
+                <label class="control-label">Max Volume/Trade</label>
+                <input type="number" id="maxVolume" value="49900" min="1000" max="200000">
+            </div>
+            <div class="control-item">
+                <label class="control-label">Max Daily Volume</label>
+                <input type="number" id="maxDailyVolume" value="500000" min="50000" max="2000000">
+            </div>
+            <div class="control-item">
+                <label class="control-label">Scan Interval (s)</label>
+                <input type="number" id="scanInterval" value="10" min="5" max="60">
+            </div>
+            <div class="control-item">
+                <label class="control-label">Risk Score Limit</label>
+                <input type="number" id="riskScore" value="5" min="1" max="10">
+            </div>
+            <div class="control-item">
+                <label class="control-label">Stop Loss %</label>
+                <input type="number" id="stopLoss" value="0.5" min="0.1" max="5" step="0.1">
+            </div>
+        </div>
+        <div style="margin-top: 20px; display: flex; gap: 15px; align-items: center;">
+            <label style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="autoTrading">
+                <span>Enable Auto Trading</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="p2pTrading" checked>
+                <span>Enable P2P Trading</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="testMode">
+                <span>Test Mode</span>
+            </label>
+        </div>
+        <div style="margin-top: 20px; display: flex; gap: 15px;">
+            <button class="btn btn-success" onclick="startBot()">Start Bot</button>
+            <button class="btn btn-danger" onclick="stopBot()">Stop Bot</button>
+            <button class="btn btn-primary" onclick="updateConfig()">Update Config</button>
+            <button class="btn btn-primary" onclick="refreshData()">Refresh Data</button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="uptime">0h</div>
+            <div class="stat-label">Uptime</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalScans">0</div>
+            <div class="stat-label">Total Scans</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="oppFound">0</div>
+            <div class="stat-label">Opportunities Found</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="tradesExecuted">0</div>
+            <div class="stat-label">Trades Executed</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="successRate">0%</div>
+            <div class="stat-label">Success Rate</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalProfit" style="color: var(--success);">₹0</div>
+            <div class="stat-label">Total Profit</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="dailyVolume">₹0</div>
+            <div class="stat-label">Daily Volume</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="avgProfit">₹0</div>
+            <div class="stat-label">Avg Profit/Trade</div>
+        </div>
+    </div>
+
+    <div class="opportunities-section">
+        <h2>Live Opportunities</h2>
+        <div class="opportunity-filters">
+            <button class="filter-btn active" onclick="filterOpportunities('all')">All</button>
+            <button class="filter-btn" onclick="filterOpportunities('exchange')">Exchange Only</button>
+            <button class="filter-btn" onclick="filterOpportunities('p2p')">P2P</button>
+            <button class="filter-btn" onclick="filterOpportunities('high-profit')">High Profit (>2%)</button>
+        </div>
+        <div class="opportunities-list" id="opportunitiesList">
+            <div style="text-align: center; color: var(--text-dim); padding: 40px;">
+                No opportunities available
+            </div>
+        </div>
+    </div>
+
+    <div class="trades-section">
+        <h2>Recent Trades</h2>
+        <div id="tradesList">
+            <div style="text-align: center; color: var(--text-dim); padding: 20px;">
+                No trades executed yet
+            </div>
+        </div>
+    </div>
+
+    <div class="logs-section">
+        <h2>Live Logs</h2>
+        <div class="log-window" id="logWindow">
+            <div class="log-entry info">[INFO] Bot Control Center initialized</div>
+        </div>
+    </div>
+
+    <div class="modal" id="opportunityModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Opportunity Details</h3>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let botState = {
+            isRunning: false,
+            config: {
+                minProfitPercentage: 1.0,
+                maxVolumePerTrade: 49900,
+                maxDailyVolume: 500000,
+                enableAutoTrading: false,
+                enableP2PTrading: true,
+                riskScore: 5,
+                stopLossPercentage: 0.5,
+                scanInterval: 10000,
+                enableTestMode: false
+            },
+            stats: {
+                uptime: 0,
+                totalScans: 0,
+                opportunitiesFound: 0,
+                tradesExecuted: 0,
+                tradesSuccessful: 0,
+                totalProfit: 0,
+                dailyVolume: 0,
+                averageProfit: 0
+            },
+            opportunities: [],
+            trades: [],
+            logs: []
+        };
+
+        let currentFilter = 'all';
+        let updateInterval = null;
+
+        // Initialize
+        function init() {
+            loadConfig();
+            updateUI();
+            startDataUpdates();
+            addLog('Bot Control Center initialized', 'info');
+        }
+
+        // Configuration management
+        function loadConfig() {
+            const savedConfig = localStorage.getItem('botConfig');
+            if (savedConfig) {
+                botState.config = JSON.parse(savedConfig);
+                updateConfigUI();
+            }
+        }
+
+        function updateConfigUI() {
+            document.getElementById('minProfit').value = botState.config.minProfitPercentage;
+            document.getElementById('maxVolume').value = botState.config.maxVolumePerTrade;
+            document.getElementById('maxDailyVolume').value = botState.config.maxDailyVolume;
+            document.getElementById('scanInterval').value = botState.config.scanInterval / 1000;
+            document.getElementById('riskScore').value = botState.config.riskScore;
+            document.getElementById('stopLoss').value = botState.config.stopLossPercentage;
+            document.getElementById('autoTrading').checked = botState.config.enableAutoTrading;
+            document.getElementById('p2pTrading').checked = botState.config.enableP2PTrading;
+            document.getElementById('testMode').checked = botState.config.enableTestMode;
+        }
+
+        function updateConfig() {
+            botState.config.minProfitPercentage = parseFloat(document.getElementById('minProfit').value);
+            botState.config.maxVolumePerTrade = parseFloat(document.getElementById('maxVolume').value);
+            botState.config.maxDailyVolume = parseFloat(document.getElementById('maxDailyVolume').value);
+            botState.config.scanInterval = parseFloat(document.getElementById('scanInterval').value) * 1000;
+            botState.config.riskScore = parseInt(document.getElementById('riskScore').value);
+            botState.config.stopLossPercentage = parseFloat(document.getElementById('stopLoss').value);
+            botState.config.enableAutoTrading = document.getElementById('autoTrading').checked;
+            botState.config.enableP2PTrading = document.getElementById('p2pTrading').checked;
+            botState.config.enableTestMode = document.getElementById('testMode').checked;
+
+            localStorage.setItem('botConfig', JSON.stringify(botState.config));
+            addLog('Configuration updated', 'success');
+            
+            // Send to bot if running
+            if (botState.isRunning) {
+                sendBotCommand('updateConfig', botState.config);
+            }
+        }
+
+        // Bot control
+        function startBot() {
+            botState.isRunning = true;
+            updateBotStatus();
+            addLog('Starting bot...', 'info');
+            
+            // Simulate bot startup
+            setTimeout(() => {
+                addLog('Bot started successfully', 'success');
+                simulateOpportunities();
+            }, 1000);
+        }
+
+        function stopBot() {
+            botState.isRunning = false;
+            updateBotStatus();
+            addLog('Bot stopped', 'warning');
+        }
+
+        function updateBotStatus() {
+            const statusDot = document.getElementById('botStatusDot');
+            const statusText = document.getElementById('botStatusText');
+            
+            if (botState.isRunning) {
+                statusDot.classList.add('active');
+                statusText.textContent = 'Bot Running';
+            } else {
+                statusDot.classList.remove('active');
+                statusText.textContent = 'Bot Offline';
+            }
+        }
+
+        // Data updates
+        function startDataUpdates() {
+            updateInterval = setInterval(() => {
+                if (botState.isRunning) {
+                    updateStats();
+                    updateOpportunities();
+                }
+            }, 1000);
+        }
+
+        function updateStats() {
+            // Update uptime
+            if (botState.stats.uptime > 0) {
+                const hours = Math.floor(botState.stats.uptime / 3600000);
+                const minutes = Math.floor((botState.stats.uptime % 3600000) / 60000);
+                document.getElementById('uptime').textContent = `${hours}h ${minutes}m`;
+            }
+
+            // Update other stats
+            document.getElementById('totalScans').textContent = botState.stats.totalScans;
+            document.getElementById('oppFound').textContent = botState.stats.opportunitiesFound;
+            document.getElementById('tradesExecuted').textContent = botState.stats.tradesExecuted;
+            
+            const successRate = botState.stats.tradesExecuted > 0 
+                ? ((botState.stats.tradesSuccessful / botState.stats.tradesExecuted) * 100).toFixed(1)
+                : 0;
+            document.getElementById('successRate').textContent = `${successRate}%`;
+            
+            document.getElementById('totalProfit').textContent = `₹${botState.stats.totalProfit.toFixed(2)}`;
+            document.getElementById('dailyVolume').textContent = `₹${botState.stats.dailyVolume.toLocaleString()}`;
+            document.getElementById('avgProfit').textContent = `₹${botState.stats.averageProfit.toFixed(2)}`;
+        }
+
+        function updateOpportunities() {
+            const list = document.getElementById('opportunitiesList');
+            const filtered = filterOpportunitiesList(botState.opportunities);
+            
+            if (filtered.length === 0) {
+                list.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 40px;">No opportunities available</div>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(opp => `
+                <div class="opportunity-card ${opp.profitPercentage >= 2 ? 'high-profit' : ''} ${opp.status === 'executing' ? 'executing' : ''}" 
+                     onclick="showOpportunityDetails('${opp.id}')">
+                    <div class="opportunity-info">
+                        <div class="opportunity-route">${opp.buyFrom} → ${opp.sellTo}</div>
+                        <div class="opportunity-details">
+                            <span>Type: ${opp.type}</span>
+                            <span>Risk: ${opp.riskScore}/10</span>
+                            <span>Time: ${opp.estimatedTime}</span>
+                            <span>Volume: ₹${opp.volume.toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <div class="opportunity-actions">
+                        <div class="profit-display">
+                            <div class="profit-percentage">${opp.profitPercentage.toFixed(2)}%</div>
+                            <div class="profit-amount">₹${opp.profit.toFixed(2)}</div>
+                        </div>
+                        ${opp.status === 'pending' && !botState.config.enableAutoTrading ? 
+                            `<button class="execute-btn" onclick="executeOpportunity('${opp.id}', event)">Execute</button>` :
+                            `<span style="color: var(--text-dim); font-size: 0.9em;">${opp.status}</span>`
+                        }
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterOpportunitiesList(opportunities) {
+            switch (currentFilter) {
+                case 'exchange':
+                    return opportunities.filter(o => o.type === 'exchange');
+                case 'p2p':
+                    return opportunities.filter(o => o.type === 'p2p');
+                case 'high-profit':
+                    return opportunities.filter(o => o.profitPercentage >= 2);
+                default:
+                    return opportunities;
+            }
+        }
+
+        function filterOpportunities(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            updateOpportunities();
+        }
+
+        // Opportunity execution
+        function executeOpportunity(id, event) {
+            event.stopPropagation();
+            const opportunity = botState.opportunities.find(o => o.id === id);
+            if (!opportunity) return;
+
+            opportunity.status = 'executing';
+            updateOpportunities();
+            addLog(`Executing trade: ${opportunity.buyFrom} → ${opportunity.sellTo}`, 'info');
+            
+            // Simulate execution
+            setTimeout(() => {
+                const success = Math.random() > 0.2; // 80% success rate
+                if (success) {
+                    opportunity.status = 'completed';
+                    botState.stats.tradesExecuted++;
+                    botState.stats.tradesSuccessful++;
+                    botState.stats.totalProfit += opportunity.profit;
+                    botState.stats.dailyVolume += opportunity.volume;
+                    addLog(`Trade completed! Profit: ₹${opportunity.profit.toFixed(2)}`, 'success');
+                    addTrade(opportunity, 'completed');
+                } else {
+                    opportunity.status = 'failed';
+                    botState.stats.tradesExecuted++;
+                    addLog(`Trade failed: Slippage too high`, 'error');
+                    addTrade(opportunity, 'failed');
+                }
+                updateOpportunities();
+                updateStats();
+            }, 3000);
+        }
+
+        function showOpportunityDetails(id) {
+            const opportunity = botState.opportunities.find(o => o.id === id);
+            if (!opportunity) return;
+
+            const modal = document.getElementById('opportunityModal');
+            const content = document.getElementById('modalContent');
+            
+            content.innerHTML = `
+                <div style="display: grid; gap: 15px;">
+                    <div>
+                        <strong>Route:</strong> ${opportunity.buyFrom} → ${opportunity.sellTo}
+                    </div>
+                    <div>
+                        <strong>Type:</strong> ${opportunity.type.toUpperCase()}
+                    </div>
+                    <div>
+                        <strong>Buy Price:</strong> ₹${opportunity.buyPrice.toFixed(2)}
+                    </div>
+                    <div>
+                        <strong>Sell Price:</strong> ₹${opportunity.sellPrice.toFixed(2)}
+                    </div>
+                    <div>
+                        <strong>Volume:</strong> ₹${opportunity.volume.toLocaleString()}
+                    </div>
+                    <div>
+                        <strong>Expected Profit:</strong> ${opportunity.profitPercentage.toFixed(2)}% (₹${opportunity.profit.toFixed(2)})
+                    </div>
+                    <div>
+                        <strong>Risk Score:</strong> ${opportunity.riskScore}/10
+                    </div>
+                    <div>
+                        <strong>Estimated Time:</strong> ${opportunity.estimatedTime}
+                    </div>
+                    <div>
+                        <strong>Status:</strong> ${opportunity.status}
+                    </div>
+                    ${opportunity.merchant ? `<div><strong>Merchant:</strong> ${opportunity.merchant}</div>` : ''}
+                </div>
+                ${opportunity.status === 'pending' && !botState.config.enableAutoTrading ? 
+                    `<button class="btn btn-success" style="margin-top: 20px; width: 100%;" 
+                            onclick="executeOpportunity('${opportunity.id}', event); closeModal();">
+                        Execute Trade
+                    </button>` : ''
+                }
+            `;
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('opportunityModal').style.display = 'none';
+        }
+
+        // Trade management
+        function addTrade(opportunity, status) {
+            const trade = {
+                ...opportunity,
+                completedAt: new Date(),
+                finalStatus: status
+            };
+            
+            botState.trades.unshift(trade);
+            if (botState.trades.length > 50) botState.trades.pop();
+            
+            updateTradesDisplay();
+        }
+
+        function updateTradesDisplay() {
+            const list = document.getElementById('tradesList');
+            
+            if (botState.trades.length === 0) {
+                list.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 20px;">No trades executed yet</div>';
+                return;
+            }
+
+            list.innerHTML = botState.trades.slice(0, 10).map(trade => `
+                <div class="trade-item">
+                    <div class="trade-status ${trade.finalStatus}"></div>
+                    <div>
+                        <div style="font-weight: bold;">${trade.buyFrom} → ${trade.sellTo}</div>
+                        <div style="color: var(--text-dim); font-size: 0.9em;">
+                            ${new Date(trade.completedAt).toLocaleTimeString()}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: bold; color: ${trade.finalStatus === 'completed' ? 'var(--success)' : 'var(--danger)'};">
+                            ${trade.finalStatus === 'completed' ? '+' : ''}₹${trade.profit.toFixed(2)}
+                        </div>
+                        <div style="color: var(--text-dim); font-size: 0.9em;">
+                            ${trade.profitPercentage.toFixed(2)}%
+                        </div>
+                    </div>
+                    <div>
+                        <span class="trade-status-text" style="color: ${trade.finalStatus === 'completed' ? 'var(--success)' : 'var(--danger)'};">
+                            ${trade.finalStatus.toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Logging
+        function addLog(message, type = 'info') {
+            const log = {
+                message,
+                type,
+                timestamp: new Date()
+            };
+            
+            botState.logs.unshift(log);
+            if (botState.logs.length > 100) botState.logs.pop();
+            
+            updateLogDisplay();
+        }
+
+        function updateLogDisplay() {
+            const logWindow = document.getElementById('logWindow');
+            
+            logWindow.innerHTML = botState.logs.slice(0, 50).map(log => `
+                <div class="log-entry ${log.type}">
+                    [${log.timestamp.toLocaleTimeString()}] ${log.message}
+                </div>
+            `).join('');
+            
+            logWindow.scrollTop = 0;
+        }
+
+        // Simulation functions (for demo)
+        function simulateOpportunities() {
+            if (!botState.isRunning) return;
+
+            // Simulate stats update
+            botState.stats.uptime += 1000;
+            botState.stats.totalScans++;
+
+            // Randomly generate opportunities
+            if (Math.random() > 0.7) {
+                const types = ['exchange', 'p2p'];
+                const exchanges = ['Binance', 'ZebPay', 'KuCoin', 'CoinSwitch'];
+                const p2pPlatforms = ['Binance P2P', 'WazirX P2P', 'Local P2P'];
+                
+                const type = types[Math.floor(Math.random() * types.length)];
+                const buyFrom = exchanges[Math.floor(Math.random() * exchanges.length)];
+                const sellTo = type === 'exchange' 
+                    ? exchanges[Math.floor(Math.random() * exchanges.length)]
+                    : p2pPlatforms[Math.floor(Math.random() * p2pPlatforms.length)];
+                
+                if (buyFrom !== sellTo) {
+                    const buyPrice = 87.5 + (Math.random() * 0.5 - 0.25);
+                    const sellPrice = buyPrice * (1 + (Math.random() * 0.03 + 0.005));
+                    const volume = Math.min(botState.config.maxVolumePerTrade, 49900);
+                    const profitPercentage = ((sellPrice - buyPrice) / buyPrice * 100);
+                    
+                    if (profitPercentage >= botState.config.minProfitPercentage) {
+                        const opportunity = {
+                            id: `opp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            type,
+                            buyFrom,
+                            sellTo,
+                            buyPrice,
+                            sellPrice,
+                            volume,
+                            profit: (sellPrice - buyPrice) * (volume / buyPrice) * 0.998,
+                            profitPercentage,
+                            estimatedTime: type === 'exchange' ? '5-10 mins' : '15-20 mins',
+                            riskScore: Math.floor(Math.random() * 5) + 1,
+                            status: 'pending',
+                            createdAt: new Date()
+                        };
+                        
+                        botState.opportunities.unshift(opportunity);
+                        if (botState.opportunities.length > 20) botState.opportunities.pop();
+                        
+                        botState.stats.opportunitiesFound++;
+                        addLog(`New opportunity: ${buyFrom} → ${sellTo} (${profitPercentage.toFixed(2)}%)`, 'info');
+                        
+                        // Auto-execute if enabled
+                        if (botState.config.enableAutoTrading && profitPercentage >= botState.config.minProfitPercentage) {
+                            setTimeout(() => executeOpportunity(opportunity.id, { stopPropagation: () => {} }), 1000);
+                        }
+                    }
+                }
+            }
+
+            // Update stats
+            if (botState.stats.tradesSuccessful > 0) {
+                botState.stats.averageProfit = botState.stats.totalProfit / botState.stats.tradesSuccessful;
+            }
+
+            updateUI();
+
+            // Continue simulation
+            setTimeout(() => simulateOpportunities(), botState.config.scanInterval);
+        }
+
+        function updateUI() {
+            updateStats();
+            updateOpportunities();
+        }
+
+        function refreshData() {
+            addLog('Refreshing data...', 'info');
+            updateUI();
+        }
+
+        function sendBotCommand(command, data) {
+            // In a real implementation, this would send commands to the bot
+            addLog(`Command sent: ${command}`, 'info');
+        }
+
+        // WebSocket simulation
+        function simulateWebSocket() {
+            const wsDot = document.getElementById('wsStatusDot');
+            const wsText = document.getElementById('wsStatusText');
+            
+            setInterval(() => {
+                const connected = Math.random() > 0.1;
+                if (connected) {
+                    wsDot.classList.add('active');
+                    wsText.textContent = 'Connected';
+                } else {
+                    wsDot.classList.remove('active');
+                    wsText.textContent = 'Reconnecting...';
+                }
+            }, 5000);
+        }
+
+        // Event listeners
+        window.onclick = (event) => {
+            if (event.target === document.getElementById('opportunityModal')) {
+                closeModal();
+            }
+        };
+
+        // Initialize on load
+        init();
+        simulateWebSocket();
+    </script>
+</body>
+</html>

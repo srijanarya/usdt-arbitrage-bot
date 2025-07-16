@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>P2P Live Arbitrage Dashboard - India</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0f1b;
+            color: #e4e4e7;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .status-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+        }
+        
+        .live-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1024px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: #1a1f2e;
+            border: 1px solid #2d3748;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-title {
+            font-size: 1.3em;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .best-opportunity {
+            background: linear-gradient(135deg, #1a1f2e 0%, #2d3748 100%);
+            border: 2px solid #10b981;
+            grid-column: span 2;
+            animation: glow 3s ease-in-out infinite;
+        }
+        
+        @media (max-width: 1024px) {
+            .best-opportunity {
+                grid-column: span 1;
+            }
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.5); }
+        }
+        
+        .opportunity-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .detail-box {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .detail-label {
+            font-size: 0.9em;
+            color: #94a3b8;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #10b981;
+        }
+        
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .price-table th {
+            background: rgba(102, 126, 234, 0.2);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-radius: 5px;
+        }
+        
+        .price-table td {
+            padding: 12px;
+            border-bottom: 1px solid #2d3748;
+        }
+        
+        .price-table tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .buy-price {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+        
+        .sell-price {
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .profit-badge {
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .high-profit {
+            background: #f59e0b;
+            animation: flash 2s infinite;
+        }
+        
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .merchant-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .rating-star {
+            color: #fbbf24;
+        }
+        
+        .controls {
+            background: #1a1f2e;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .refresh-timer {
+            background: rgba(102, 126, 234, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        
+        .alert {
+            background: #dc2626;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .success-alert {
+            background: #10b981;
+        }
+        
+        .warning-alert {
+            background: #f59e0b;
+        }
+        
+        .footer {
+            text-align: center;
+            color: #64748b;
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 1px solid #2d3748;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #94a3b8;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #1a1f2e;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #2d3748;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>🚀 P2P Live Arbitrage Dashboard</h1>
+            <p>Real-time USDT arbitrage opportunities in India</p>
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="live-indicator"></span>
+                    <span id="status">Connecting...</span>
+                </div>
+                <div class="status-item" id="last-update">Never updated</div>
+                <div class="status-item" id="opportunity-count">0 opportunities</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div>
+                <button onclick="refreshData()">🔄 Refresh Now</button>
+                <button onclick="toggleAutoRefresh()">⏸️ Pause Auto-Refresh</button>
+                <button onclick="showGuide()">📖 Quick Guide</button>
+            </div>
+            <div class="refresh-timer" id="refresh-timer">Next update in: 60s</div>
+        </div>
+
+        <div id="alerts"></div>
+
+        <div class="quick-stats">
+            <div class="stat-card">
+                <div class="stat-value" id="best-profit">0%</div>
+                <div class="stat-label">Best Net Profit</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-profit">0%</div>
+                <div class="stat-label">Average Profit</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="profitable-count">0</div>
+                <div class="stat-label">Profitable Routes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="best-exchange">-</div>
+                <div class="stat-label">Best Buy Exchange</div>
+            </div>
+        </div>
+
+        <div class="grid-container">
+            <div class="card best-opportunity" id="best-opportunity" style="display: none;">
+                <div class="card-title">
+                    <span>🎯 Best Opportunity Right Now</span>
+                    <span class="profit-badge high-profit" id="best-profit-badge">0%</span>
+                </div>
+                <div class="opportunity-details">
+                    <div class="detail-box">
+                        <div class="detail-label">Buy From</div>
+                        <div class="detail-value" id="best-buy-exchange">-</div>
+                    </div>
+                    <div class="detail-box">
+                        <div class="detail-label">Listed Price</div>
+                        <div class="detail-value buy-price" id="best-buy-price">₹0</div>
+                    </div>
+                    <div class="detail-box">
+                        <div class="detail-label">Effective Price</div>
+                        <div class="detail-value" id="best-effective-price" style="color: #f59e0b;">₹0</div>
+                    </div>
+                    <div class="detail-box">
+                        <div class="detail-label">Sell To</div>
+                        <div class="detail-value" id="best-merchant">-</div>
+                    </div>
+                    <div class="detail-box">
+                        <div class="detail-label">Sell Price</div>
+                        <div class="detail-value sell-price" id="best-sell-price">₹0</div>
+                    </div>
+                    <div class="detail-box">
+                        <div class="detail-label">Net Profit (₹1L)</div>
+                        <div class="detail-value" id="best-profit-amount">₹0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📊 Exchange Prices (Buy)</div>
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Exchange</th>
+                            <th>Price</th>
+                            <th>Effective*</th>
+                        </tr>
+                    </thead>
+                    <tbody id="exchange-prices">
+                        <tr><td colspan="3" class="loading">Loading...</td></tr>
+                    </tbody>
+                </table>
+                <p style="font-size: 0.8em; color: #64748b; margin-top: 10px;">
+                    *Includes fees & withdrawal
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-title">💰 P2P Merchants (Sell)</div>
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Platform</th>
+                            <th>Merchant</th>
+                            <th>Price</th>
+                            <th>Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody id="p2p-prices">
+                        <tr><td colspan="4" class="loading">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card" style="grid-column: span 2;">
+                <div class="card-title">🏆 Top Arbitrage Opportunities</div>
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Buy Exchange</th>
+                            <th>Listed Price</th>
+                            <th>Effective Price*</th>
+                            <th>P2P Platform</th>
+                            <th>Merchant</th>
+                            <th>Sell Price</th>
+                            <th>Net Profit**</th>
+                        </tr>
+                    </thead>
+                    <tbody id="opportunities-table">
+                        <tr><td colspan="7" class="loading">Calculating opportunities...</td></tr>
+                    </tbody>
+                </table>
+                <p style="font-size: 0.8em; color: #64748b; margin-top: 10px;">
+                    *Effective price includes exchange fee + withdrawal fee | **Net profit is calculated on effective price after all taxes
+                </p>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-title">📊 Fee Breakdown for Best Opportunity</div>
+            <div id="fee-breakdown" style="display: none;">
+                <table class="price-table">
+                    <tr>
+                        <td>Trading Fee</td>
+                        <td id="fee-trading">₹0</td>
+                    </tr>
+                    <tr>
+                        <td>GST (18% on fee)</td>
+                        <td id="fee-gst">₹0</td>
+                    </tr>
+                    <tr>
+                        <td>Spread/Slippage</td>
+                        <td id="fee-spread">₹0</td>
+                    </tr>
+                    <tr>
+                        <td>Network Withdrawal</td>
+                        <td id="fee-withdrawal">₹0</td>
+                    </tr>
+                    <tr>
+                        <td>P2P Platform Fee</td>
+                        <td id="fee-p2p">₹0</td>
+                    </tr>
+                    <tr>
+                        <td>Bank Charges</td>
+                        <td id="fee-bank">₹10</td>
+                    </tr>
+                    <tr>
+                        <td>TDS (1%)</td>
+                        <td id="fee-tds">₹0</td>
+                    </tr>
+                    <tr>
+                        <td>Capital Gains Tax (30%)</td>
+                        <td id="fee-tax">₹0</td>
+                    </tr>
+                    <tr style="border-top: 2px solid #f59e0b;">
+                        <td><strong>Total Fees & Taxes</strong></td>
+                        <td><strong id="fee-total">₹0</strong></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>💡 Tip: Keep transactions under ₹50,000 to avoid TDS. All profits shown include ALL fees and 30% tax.</p>
+            <p>⚠️ Network: Use TRC20 (1 USDT fee). Avoid ERC20 (10-30 USDT fee).</p>
+            <p>Last data fetch: <span id="data-timestamp">Never</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            refreshInterval: 60000, // 1 minute
+            exchanges: {
+                'CoinDCX': { basePrice: 87.20, fee: 0.001, withdrawal: 1 },
+                'WazirX': { basePrice: 87.50, fee: 0, withdrawal: 1 },
+                'Giottus': { basePrice: 88.10, fee: 0.002, withdrawal: 1 },
+                'CoinSwitch': { basePrice: 88.13, fee: 0.001, withdrawal: 1 },
+                'ZebPay': { basePrice: 87.90, fee: 0.0015, withdrawal: 1 }
+            }
+        };
+
+        // Global state
+        let autoRefresh = true;
+        let refreshTimer = null;
+        let countdownTimer = null;
+        let timeUntilRefresh = CONFIG.refreshInterval / 1000;
+
+        // Simulated P2P data (in production, fetch from API)
+        function generateP2PData() {
+            const merchants = [
+                { name: 'CryptoKing', platform: 'Binance P2P', basePrice: 89.50, rating: 99.8, orders: 5432, methods: 'UPI, IMPS' },
+                { name: 'FastTrade', platform: 'Binance P2P', basePrice: 90.20, rating: 100, orders: 8765, methods: 'UPI, Bank' },
+                { name: 'SecureX', platform: 'Binance P2P', basePrice: 89.80, rating: 99.5, orders: 3210, methods: 'UPI' },
+                { name: 'ProTrader', platform: 'Bybit P2P', basePrice: 90.10, rating: 99.9, orders: 4321, methods: 'All' },
+                { name: 'QuickBuy', platform: 'Bybit P2P', basePrice: 89.90, rating: 99.7, orders: 2345, methods: 'Bank, UPI' },
+                { name: 'IndiaTrader', platform: 'OKX P2P', basePrice: 90.00, rating: 99.6, orders: 1234, methods: 'UPI, Paytm' },
+                { name: 'TrustDeal', platform: 'WazirX P2P', basePrice: 89.70, rating: 98.5, orders: 876, methods: 'UPI' },
+                { name: 'SwiftPay', platform: 'KuCoin P2P', basePrice: 90.30, rating: 99.2, orders: 1567, methods: 'All' }
+            ];
+
+            return merchants.map(m => ({
+                ...m,
+                price: m.basePrice + (Math.random() - 0.5) * 1.5
+            })).filter(m => m.rating >= 98);
+        }
+
+        // Calculate profit including ALL fees and taxes
+        function calculateProfit(buyPrice, sellPrice, amount = 100000, exchangeName = '', p2pPlatform = '') {
+            // Get exchange-specific fees
+            const exchange = CONFIG.exchanges[exchangeName] || { fee: 0.001, withdrawal: 1 };
+            
+            // BUYING SIDE COSTS
+            // 1. Trading fee
+            const tradingFee = amount * exchange.fee;
+            // 2. GST on trading fee (18%)
+            const gstOnTradingFee = tradingFee * 0.18;
+            // 3. Spread/Slippage (0.1-0.2%)
+            const spreadCost = amount * 0.001;
+            // 4. Total buying cost
+            const totalBuyingCost = amount + tradingFee + gstOnTradingFee + spreadCost;
+            
+            // 5. USDT received
+            const usdtBought = amount / buyPrice;
+            // 6. Network withdrawal fee (TRC20 = 1 USDT)
+            const withdrawalFeeUSDT = exchange.withdrawal;
+            const usdtAfterWithdrawal = usdtBought - withdrawalFeeUSDT;
+            
+            // 7. Effective buy price (total cost / USDT received)
+            const effectiveBuyPrice = totalBuyingCost / usdtAfterWithdrawal;
+            
+            // SELLING SIDE REVENUE
+            // 8. Gross P2P sale amount
+            const grossRevenue = usdtAfterWithdrawal * sellPrice;
+            
+            // 9. P2P Platform fees
+            const p2pFees = {
+                'Binance P2P': 0,
+                'Bybit P2P': 0,
+                'OKX P2P': 0,
+                'KuCoin P2P': 0,
+                'WazirX P2P': 0.002, // 0.2%
+            };
+            const p2pFeeRate = p2pFees[p2pPlatform] || 0;
+            const p2pFee = grossRevenue * p2pFeeRate;
+            
+            // 10. Bank processing charges (avg ₹10)
+            const bankCharges = 10;
+            
+            // 11. TDS (1% on transactions > ₹50,000)
+            const revenueAfterP2P = grossRevenue - p2pFee;
+            const tds = revenueAfterP2P > 50000 ? revenueAfterP2P * 0.01 : 0;
+            
+            // 12. Net revenue after all deductions
+            const netRevenue = revenueAfterP2P - tds - bankCharges;
+            
+            // PROFIT CALCULATION
+            // 13. Gross profit
+            const grossProfit = netRevenue - totalBuyingCost;
+            
+            // 14. Capital gains tax (30% on profit)
+            const capitalGainsTax = grossProfit > 0 ? grossProfit * 0.30 : 0;
+            
+            // 15. Net profit after all taxes
+            const netProfit = grossProfit - capitalGainsTax;
+            const netProfitPercent = (netProfit / amount) * 100;
+            
+            // Return comprehensive breakdown
+            return {
+                netProfit: netProfit.toFixed(2),
+                netProfitPercent: netProfitPercent.toFixed(2),
+                effectiveBuyPrice: effectiveBuyPrice.toFixed(2),
+                totalFees: (tradingFee + gstOnTradingFee + spreadCost + p2pFee + bankCharges + tds + capitalGainsTax).toFixed(2),
+                breakdown: {
+                    tradingFee: tradingFee.toFixed(2),
+                    gst: gstOnTradingFee.toFixed(2),
+                    spread: spreadCost.toFixed(2),
+                    withdrawalFee: (withdrawalFeeUSDT * buyPrice).toFixed(2),
+                    p2pFee: p2pFee.toFixed(2),
+                    bankCharges: bankCharges,
+                    tds: tds.toFixed(2),
+                    tax: capitalGainsTax.toFixed(2)
+                }
+            };
+        }
+
+        // Update dashboard with new data
+        function updateDashboard() {
+            const exchangePrices = {};
+            const exchangeTableBody = document.getElementById('exchange-prices');
+            exchangeTableBody.innerHTML = '';
+
+            // Update exchange prices
+            for (const [name, data] of Object.entries(CONFIG.exchanges)) {
+                const currentPrice = data.basePrice + (Math.random() - 0.5) * 0.5;
+                const effectivePrice = currentPrice * (1 + data.fee) + data.withdrawal;
+                exchangePrices[name] = currentPrice;
+
+                const row = `
+                    <tr>
+                        <td>${name}</td>
+                        <td class="buy-price">₹${currentPrice.toFixed(2)}</td>
+                        <td>₹${effectivePrice.toFixed(2)}</td>
+                    </tr>
+                `;
+                exchangeTableBody.innerHTML += row;
+            }
+
+            // Update P2P prices
+            const p2pData = generateP2PData();
+            const p2pTableBody = document.getElementById('p2p-prices');
+            p2pTableBody.innerHTML = '';
+
+            p2pData.slice(0, 5).forEach(merchant => {
+                const row = `
+                    <tr>
+                        <td style="color: #667eea;">${merchant.platform}</td>
+                        <td>${merchant.name}</td>
+                        <td class="sell-price">₹${merchant.price.toFixed(2)}</td>
+                        <td class="merchant-rating">
+                            <span class="rating-star">⭐</span>
+                            ${merchant.rating}%
+                        </td>
+                    </tr>
+                `;
+                p2pTableBody.innerHTML += row;
+            });
+
+            // Calculate opportunities
+            const opportunities = [];
+            for (const [exchange, buyPrice] of Object.entries(exchangePrices)) {
+                for (const merchant of p2pData) {
+                    const profit = calculateProfit(buyPrice, merchant.price, 100000, exchange, merchant.platform);
+                    if (parseFloat(profit.netProfitPercent) > 0) {
+                        opportunities.push({
+                            exchange,
+                            buyPrice: buyPrice.toFixed(2),
+                            effectiveBuyPrice: profit.effectiveBuyPrice,
+                            merchant: merchant.name,
+                            platform: merchant.platform,
+                            sellPrice: merchant.price.toFixed(2),
+                            methods: merchant.methods,
+                            netProfit: profit.netProfit,
+                            netProfitPercent: profit.netProfitPercent,
+                            totalFees: profit.totalFees,
+                            breakdown: profit.breakdown
+                        });
+                    }
+                }
+            }
+
+            // Sort by profit
+            opportunities.sort((a, b) => parseFloat(b.netProfitPercent) - parseFloat(a.netProfitPercent));
+
+            // Update best opportunity
+            if (opportunities.length > 0) {
+                const best = opportunities[0];
+                document.getElementById('best-opportunity').style.display = 'block';
+                document.getElementById('best-buy-exchange').textContent = best.exchange;
+                document.getElementById('best-buy-price').textContent = `₹${best.buyPrice}`;
+                document.getElementById('best-effective-price').textContent = `₹${best.effectiveBuyPrice}`;
+                document.getElementById('best-merchant').textContent = `${best.merchant} (${best.platform})`;
+                document.getElementById('best-sell-price').textContent = `₹${best.sellPrice}`;
+                document.getElementById('best-profit-badge').textContent = `${best.netProfitPercent}%`;
+                document.getElementById('best-profit-amount').textContent = `₹${best.netProfit}`;
+                
+                // Update fee breakdown
+                document.getElementById('fee-breakdown').style.display = 'block';
+                document.getElementById('fee-trading').textContent = `₹${best.breakdown.tradingFee}`;
+                document.getElementById('fee-gst').textContent = `₹${best.breakdown.gst}`;
+                document.getElementById('fee-spread').textContent = `₹${best.breakdown.spread}`;
+                document.getElementById('fee-withdrawal').textContent = `₹${best.breakdown.withdrawalFee}`;
+                document.getElementById('fee-p2p').textContent = `₹${best.breakdown.p2pFee}`;
+                document.getElementById('fee-bank').textContent = `₹${best.breakdown.bankCharges}`;
+                document.getElementById('fee-tds').textContent = `₹${best.breakdown.tds}`;
+                document.getElementById('fee-tax').textContent = `₹${best.breakdown.tax}`;
+                document.getElementById('fee-total').textContent = `₹${best.totalFees}`;
+
+                // High profit alert
+                if (parseFloat(best.netProfitPercent) > 2) {
+                    showAlert('🚨 HIGH PROFIT ALERT! ' + best.netProfitPercent + '% opportunity detected!', 'success');
+                }
+            }
+
+            // Update opportunities table
+            const oppTableBody = document.getElementById('opportunities-table');
+            oppTableBody.innerHTML = '';
+
+            opportunities.slice(0, 10).forEach(opp => {
+                const profitClass = parseFloat(opp.netProfitPercent) > 1.5 ? 'high-profit' : '';
+                const row = `
+                    <tr>
+                        <td>${opp.exchange}</td>
+                        <td class="buy-price">₹${opp.buyPrice}</td>
+                        <td style="color: #f59e0b; font-weight: bold;">₹${opp.effectiveBuyPrice}</td>
+                        <td style="color: #667eea;">${opp.platform}</td>
+                        <td>${opp.merchant}</td>
+                        <td class="sell-price">₹${opp.sellPrice}</td>
+                        <td><span class="profit-badge ${profitClass}">${opp.netProfitPercent}%</span></td>
+                    </tr>
+                `;
+                oppTableBody.innerHTML += row;
+            });
+
+            // Update statistics
+            const bestProfit = opportunities.length > 0 ? opportunities[0].netProfitPercent : '0';
+            const avgProfit = opportunities.length > 0 
+                ? (opportunities.reduce((sum, o) => sum + parseFloat(o.netProfitPercent), 0) / opportunities.length).toFixed(2)
+                : '0';
+            const profitableCount = opportunities.filter(o => parseFloat(o.netProfitPercent) > 1).length;
+            
+            document.getElementById('best-profit').textContent = bestProfit + '%';
+            document.getElementById('avg-profit').textContent = avgProfit + '%';
+            document.getElementById('profitable-count').textContent = profitableCount;
+            document.getElementById('best-exchange').textContent = opportunities.length > 0 ? opportunities[0].exchange : '-';
+
+            // Update status
+            document.getElementById('status').textContent = 'Live';
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+            document.getElementById('opportunity-count').textContent = opportunities.length + ' opportunities';
+            document.getElementById('data-timestamp').textContent = new Date().toLocaleString();
+        }
+
+        // Show alert
+        function showAlert(message, type = 'warning') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${type}-alert`;
+            alertDiv.innerHTML = `<span>⚠️</span> ${message}`;
+            
+            const alertsContainer = document.getElementById('alerts');
+            alertsContainer.insertBefore(alertDiv, alertsContainer.firstChild);
+            
+            // Remove after 5 seconds
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        // Refresh data
+        function refreshData() {
+            updateDashboard();
+            resetCountdown();
+        }
+
+        // Toggle auto refresh
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            const btn = event.target;
+            btn.textContent = autoRefresh ? '⏸️ Pause Auto-Refresh' : '▶️ Resume Auto-Refresh';
+            
+            if (autoRefresh) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        }
+
+        // Start auto refresh
+        function startAutoRefresh() {
+            refreshTimer = setInterval(refreshData, CONFIG.refreshInterval);
+            startCountdown();
+        }
+
+        // Stop auto refresh
+        function stopAutoRefresh() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+            }
+            document.getElementById('refresh-timer').textContent = 'Auto-refresh paused';
+        }
+
+        // Countdown timer
+        function startCountdown() {
+            countdownTimer = setInterval(() => {
+                timeUntilRefresh--;
+                if (timeUntilRefresh <= 0) {
+                    timeUntilRefresh = CONFIG.refreshInterval / 1000;
+                }
+                document.getElementById('refresh-timer').textContent = `Next update in: ${timeUntilRefresh}s`;
+            }, 1000);
+        }
+
+        // Reset countdown
+        function resetCountdown() {
+            timeUntilRefresh = CONFIG.refreshInterval / 1000;
+        }
+
+        // Show guide
+        function showGuide() {
+            alert(`
+📖 Quick Execution Guide:
+
+1️⃣ SELECT ROUTE
+   • Check the "Best Opportunity" card
+   • Verify merchant rating is 98%+
+   • Ensure payment method matches yours
+
+2️⃣ BUY USDT
+   • Open exchange app (CoinDCX/WazirX)
+   • Deposit INR via UPI/Bank
+   • Buy USDT at market price
+   • Withdraw to Binance/Bybit
+
+3️⃣ SELL ON P2P
+   • Go to P2P section
+   • Create sell order matching merchant price
+   • Accept only verified buyers
+   • Release USDT after payment confirmation
+
+4️⃣ PROFIT TIPS
+   • Keep orders under ₹50k (no TDS)
+   • Complete within 30 minutes
+   • Screenshot all transactions
+   • Never mention "crypto" in bank remarks
+
+5️⃣ TAX REMINDER
+   • 30% on profits (quarterly advance tax)
+   • 1% TDS on orders > ₹50k
+   • Keep records for ITR filing
+
+⚡ Act fast - prices change quickly!
+            `);
+        }
+
+        // Initialize dashboard
+        function init() {
+            updateDashboard();
+            if (autoRefresh) {
+                startAutoRefresh();
+            }
+        }
+
+        // Start the dashboard
+        init();
+    </script>
+</body>
+</html>

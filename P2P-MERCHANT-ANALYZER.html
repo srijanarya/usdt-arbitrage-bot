@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🏆 P2P Merchant Rating Analyzer - Smart Counterparty Selection</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e1f;
+            color: #e2e8f0;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(6, 182, 212, 0.3);
+        }
+        .analyzer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        @media (max-width: 1200px) {
+            .analyzer-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+        .card-title {
+            font-size: 1.3em;
+            color: #06b6d4;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            background: #334155;
+            border: 2px solid #475569;
+            border-radius: 8px;
+            color: white;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #06b6d4;
+        }
+        button {
+            background: #06b6d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #0891b2;
+            transform: translateY(-2px);
+        }
+        .merchant-card {
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .merchant-card:hover {
+            border-color: #06b6d4;
+            box-shadow: 0 10px 25px rgba(6, 182, 212, 0.2);
+        }
+        .merchant-card.excellent {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+        }
+        .merchant-card.good {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+        }
+        .merchant-card.risky {
+            border-color: #ef4444;
+            background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%);
+        }
+        .merchant-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .merchant-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #e2e8f0;
+        }
+        .rating-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .rating-excellent {
+            background: #10b981;
+            color: white;
+        }
+        .rating-good {
+            background: #f59e0b;
+            color: white;
+        }
+        .rating-average {
+            background: #64748b;
+            color: white;
+        }
+        .rating-risky {
+            background: #ef4444;
+            color: white;
+        }
+        .merchant-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .stat-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #06b6d4;
+        }
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.9em;
+        }
+        .risk-indicators {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .risk-tag {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        .risk-low {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+        .risk-medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+        }
+        .risk-high {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        .payment-methods {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .payment-tag {
+            background: #334155;
+            color: #94a3b8;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+        .filters-section {
+            background: #0f172a;
+            border: 2px solid #06b6d4;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .analysis-summary {
+            background: #1e293b;
+            border: 2px solid #10b981;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .summary-item {
+            text-align: center;
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .summary-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #10b981;
+        }
+        .summary-label {
+            color: #94a3b8;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .recommendations {
+            background: #1e3a8a;
+            border: 2px solid #3b82f6;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .recommendation-item {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid #3b82f6;
+        }
+        .recommendation-icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+            color: #60a5fa;
+        }
+        .recommendation-content {
+            flex: 1;
+        }
+        .recommendation-title {
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 5px;
+        }
+        .warning-box {
+            background: #dc2626;
+            border: 2px solid #ef4444;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .success-box {
+            background: #059669;
+            border: 2px solid #10b981;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+        }
+        .table th {
+            background: #0f172a;
+            color: #06b6d4;
+            font-weight: 600;
+        }
+        .table tr:hover {
+            background: #2d3748;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 P2P Merchant Rating Analyzer</h1>
+            <p>Smart counterparty selection for optimal P2P trading performance</p>
+            <div style="margin-top: 15px; font-size: 0.9em;">
+                Analyze merchant reliability • Assess payment speed • Minimize trading risks
+            </div>
+        </div>
+
+        <div class="filters-section">
+            <h2 style="color: #06b6d4; margin-bottom: 20px;">🔍 Merchant Analysis Filters</h2>
+            
+            <div class="filters-grid">
+                <div class="input-group">
+                    <label>Platform</label>
+                    <select id="platformFilter">
+                        <option value="">All Platforms</option>
+                        <option value="binance">Binance P2P</option>
+                        <option value="wazirx">WazirX P2P</option>
+                        <option value="coindcx">CoinDCX P2P</option>
+                        <option value="zebpay">ZebPay P2P</option>
+                        <option value="local">Local P2P</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Minimum Completion Rate (%)</label>
+                    <input type="number" id="minCompletionRate" placeholder="95" value="95" min="0" max="100">
+                </div>
+                <div class="input-group">
+                    <label>Minimum Trade Count</label>
+                    <input type="number" id="minTradeCount" placeholder="100" value="100" min="0">
+                </div>
+                <div class="input-group">
+                    <label>Payment Method</label>
+                    <select id="paymentMethodFilter">
+                        <option value="">All Methods</option>
+                        <option value="upi">UPI</option>
+                        <option value="imps">IMPS</option>
+                        <option value="bank">Bank Transfer</option>
+                        <option value="digital_rupee">Digital Rupee</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Risk Level</label>
+                    <select id="riskLevelFilter">
+                        <option value="">All Risk Levels</option>
+                        <option value="low">Low Risk</option>
+                        <option value="medium">Medium Risk</option>
+                        <option value="high">High Risk</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Trading Volume (₹)</label>
+                    <select id="volumeFilter">
+                        <option value="">All Volumes</option>
+                        <option value="high">High (>₹10L)</option>
+                        <option value="medium">Medium (₹1L-10L)</option>
+                        <option value="low">Low (<₹1L)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button onclick="analyzeMerchants()">🔍 Analyze Merchants</button>
+            <button onclick="refreshData()">🔄 Refresh Data</button>
+            <button onclick="exportAnalysis()">📊 Export Analysis</button>
+        </div>
+
+        <div class="analysis-summary" id="analysisSummary" style="display: none;">
+            <h2 style="color: #10b981; margin-bottom: 20px;">📊 Analysis Summary</h2>
+            
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-value" id="totalMerchants">0</div>
+                    <div class="summary-label">Total Merchants</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="excellentMerchants">0</div>
+                    <div class="summary-label">Excellent Rating</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="avgCompletionRate">0%</div>
+                    <div class="summary-label">Avg Completion Rate</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="avgResponseTime">0m</div>
+                    <div class="summary-label">Avg Response Time</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="totalVolume">₹0</div>
+                    <div class="summary-label">Total Volume</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="riskScore">0%</div>
+                    <div class="summary-label">Overall Risk Score</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="analyzer-grid">
+            <div class="card">
+                <div class="card-title">👥 Top Rated Merchants</div>
+                <div id="topMerchantsContainer">
+                    <div class="loading">🔍 Run analysis to see top rated merchants...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">⚠️ Risk Assessment</div>
+                <div id="riskAssessmentContainer">
+                    <div class="loading">📊 Risk assessment will appear after analysis...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📋 Detailed Merchant Analysis</div>
+            <div id="merchantListContainer">
+                <div class="loading">Running merchant analysis...</div>
+            </div>
+        </div>
+
+        <div class="recommendations">
+            <h3 style="color: #60a5fa; margin-bottom: 20px;">💡 Smart Trading Recommendations</h3>
+            
+            <div class="recommendation-item">
+                <div class="recommendation-icon">🎯</div>
+                <div class="recommendation-content">
+                    <div class="recommendation-title">Optimal Merchant Selection</div>
+                    <div>Focus on merchants with >99% completion rate and <5 minute response time for maximum efficiency</div>
+                </div>
+            </div>
+            
+            <div class="recommendation-item">
+                <div class="recommendation-icon">💰</div>
+                <div class="recommendation-content">
+                    <div class="recommendation-title">Premium Opportunities</div>
+                    <div>High-volume merchants often offer better rates. Build relationships for volume discounts</div>
+                </div>
+            </div>
+            
+            <div class="recommendation-item">
+                <div class="recommendation-icon">⚡</div>
+                <div class="recommendation-content">
+                    <div class="recommendation-title">Speed Optimization</div>
+                    <div>UPI and Digital Rupee merchants provide fastest settlement times for quick arbitrage</div>
+                </div>
+            </div>
+            
+            <div class="recommendation-item">
+                <div class="recommendation-icon">🛡️</div>
+                <div class="recommendation-content">
+                    <div class="recommendation-title">Risk Mitigation</div>
+                    <div>Diversify across 3-5 trusted merchants to reduce counterparty risk and ensure availability</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="warning-box">
+            <h3>⚠️ Important Risk Warnings</h3>
+            <ul>
+                <li><strong>Counterparty Risk:</strong> Always verify payment before releasing crypto</li>
+                <li><strong>Fraud Prevention:</strong> Never trade with merchants below 95% completion rate</li>
+                <li><strong>Payment Verification:</strong> Confirm payment in your banking app, not just screenshots</li>
+                <li><strong>Dispute Resolution:</strong> Choose platforms with strong escrow systems</li>
+                <li><strong>Volume Limits:</strong> Respect merchant daily/weekly trading limits</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Sample merchant data (in production, this would come from APIs)
+        const sampleMerchants = [
+            {
+                id: 1,
+                name: "CryptoKing99",
+                platform: "binance",
+                completionRate: 99.8,
+                tradeCount: 2547,
+                responseTime: 2,
+                volume: 15000000,
+                paymentMethods: ["upi", "imps", "bank"],
+                avgPremium: 0.8,
+                riskLevel: "low",
+                activeTime: "9 AM - 11 PM",
+                verified: true
+            },
+            {
+                id: 2,
+                name: "FastTradeIndia",
+                platform: "wazirx",
+                completionRate: 99.5,
+                tradeCount: 1823,
+                responseTime: 3,
+                volume: 8500000,
+                paymentMethods: ["upi", "digital_rupee"],
+                avgPremium: 1.2,
+                riskLevel: "low",
+                activeTime: "8 AM - 10 PM",
+                verified: true
+            },
+            {
+                id: 3,
+                name: "IndiaP2PExpert",
+                platform: "coindcx",
+                completionRate: 98.9,
+                tradeCount: 1456,
+                responseTime: 4,
+                volume: 6200000,
+                paymentMethods: ["upi", "imps"],
+                avgPremium: 1.0,
+                riskLevel: "low",
+                activeTime: "24/7",
+                verified: true
+            },
+            {
+                id: 4,
+                name: "QuickCrypto",
+                platform: "zebpay",
+                completionRate: 97.8,
+                tradeCount: 987,
+                responseTime: 6,
+                volume: 3400000,
+                paymentMethods: ["upi", "bank"],
+                avgPremium: 1.5,
+                riskLevel: "medium",
+                activeTime: "10 AM - 8 PM",
+                verified: true
+            },
+            {
+                id: 5,
+                name: "LocalTrader123",
+                platform: "local",
+                completionRate: 96.2,
+                tradeCount: 654,
+                responseTime: 8,
+                volume: 2100000,
+                paymentMethods: ["upi", "bank", "digital_rupee"],
+                avgPremium: 2.1,
+                riskLevel: "medium",
+                activeTime: "9 AM - 9 PM",
+                verified: false
+            },
+            {
+                id: 6,
+                name: "BulkTraderPro",
+                platform: "binance",
+                completionRate: 99.2,
+                tradeCount: 3421,
+                responseTime: 3,
+                volume: 25000000,
+                paymentMethods: ["imps", "bank"],
+                avgPremium: 0.6,
+                riskLevel: "low",
+                activeTime: "24/7",
+                verified: true
+            }
+        ];
+
+        let filteredMerchants = [...sampleMerchants];
+
+        function getRatingClass(completionRate, tradeCount, responseTime) {
+            if (completionRate >= 99.5 && tradeCount >= 1000 && responseTime <= 3) {
+                return 'excellent';
+            } else if (completionRate >= 98.5 && tradeCount >= 500 && responseTime <= 5) {
+                return 'good';
+            } else {
+                return 'risky';
+            }
+        }
+
+        function getRatingBadge(merchant) {
+            const rating = getRatingClass(merchant.completionRate, merchant.tradeCount, merchant.responseTime);
+            const badges = {
+                excellent: { text: 'Excellent', class: 'rating-excellent', icon: '🏆' },
+                good: { text: 'Good', class: 'rating-good', icon: '👍' },
+                risky: { text: 'Risky', class: 'rating-risky', icon: '⚠️' }
+            };
+            
+            const badge = badges[rating];
+            return `<div class="rating-badge ${badge.class}">${badge.icon} ${badge.text}</div>`;
+        }
+
+        function formatVolume(volume) {
+            if (volume >= 10000000) return `₹${(volume / 10000000).toFixed(1)}Cr`;
+            if (volume >= 100000) return `₹${(volume / 100000).toFixed(1)}L`;
+            return `₹${(volume / 1000).toFixed(0)}K`;
+        }
+
+        function getPlatformName(platform) {
+            const platforms = {
+                binance: 'Binance P2P',
+                wazirx: 'WazirX P2P',
+                coindcx: 'CoinDCX P2P',
+                zebpay: 'ZebPay P2P',
+                local: 'Local P2P'
+            };
+            return platforms[platform] || platform;
+        }
+
+        function getPaymentMethodName(method) {
+            const methods = {
+                upi: 'UPI',
+                imps: 'IMPS',
+                bank: 'Bank Transfer',
+                digital_rupee: 'Digital Rupee'
+            };
+            return methods[method] || method;
+        }
+
+        function applyFilters() {
+            const platform = document.getElementById('platformFilter').value;
+            const minCompletion = parseFloat(document.getElementById('minCompletionRate').value) || 0;
+            const minTrades = parseInt(document.getElementById('minTradeCount').value) || 0;
+            const paymentMethod = document.getElementById('paymentMethodFilter').value;
+            const riskLevel = document.getElementById('riskLevelFilter').value;
+            const volumeFilter = document.getElementById('volumeFilter').value;
+
+            filteredMerchants = sampleMerchants.filter(merchant => {
+                if (platform && merchant.platform !== platform) return false;
+                if (merchant.completionRate < minCompletion) return false;
+                if (merchant.tradeCount < minTrades) return false;
+                if (paymentMethod && !merchant.paymentMethods.includes(paymentMethod)) return false;
+                if (riskLevel && merchant.riskLevel !== riskLevel) return false;
+                
+                if (volumeFilter) {
+                    if (volumeFilter === 'high' && merchant.volume < 10000000) return false;
+                    if (volumeFilter === 'medium' && (merchant.volume < 1000000 || merchant.volume >= 10000000)) return false;
+                    if (volumeFilter === 'low' && merchant.volume >= 1000000) return false;
+                }
+                
+                return true;
+            });
+        }
+
+        function renderMerchantCard(merchant) {
+            const ratingClass = getRatingClass(merchant.completionRate, merchant.tradeCount, merchant.responseTime);
+            const ratingBadge = getRatingBadge(merchant);
+            
+            const riskTags = [];
+            if (merchant.completionRate >= 99) riskTags.push('<span class="risk-tag risk-low">High Reliability</span>');
+            if (merchant.responseTime <= 3) riskTags.push('<span class="risk-tag risk-low">Fast Response</span>');
+            if (merchant.volume >= 10000000) riskTags.push('<span class="risk-tag risk-low">High Volume</span>');
+            if (merchant.verified) riskTags.push('<span class="risk-tag risk-low">Verified</span>');
+            if (merchant.completionRate < 98) riskTags.push('<span class="risk-tag risk-high">Low Completion</span>');
+            if (merchant.responseTime > 10) riskTags.push('<span class="risk-tag risk-high">Slow Response</span>');
+
+            const paymentTags = merchant.paymentMethods.map(method => 
+                `<span class="payment-tag">${getPaymentMethodName(method)}</span>`
+            ).join('');
+
+            return `
+                <div class="merchant-card ${ratingClass}">
+                    <div class="merchant-header">
+                        <div class="merchant-name">${merchant.name}</div>
+                        ${ratingBadge}
+                    </div>
+                    
+                    <div style="color: #94a3b8; margin-bottom: 15px;">
+                        ${getPlatformName(merchant.platform)} • Active: ${merchant.activeTime}
+                    </div>
+                    
+                    <div class="merchant-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${merchant.completionRate}%</div>
+                            <div class="stat-label">Completion</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${merchant.tradeCount}</div>
+                            <div class="stat-label">Trades</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${merchant.responseTime}m</div>
+                            <div class="stat-label">Response</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${formatVolume(merchant.volume)}</div>
+                            <div class="stat-label">Volume</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${merchant.avgPremium}%</div>
+                            <div class="stat-label">Avg Premium</div>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-methods">
+                        ${paymentTags}
+                    </div>
+                    
+                    <div class="risk-indicators">
+                        ${riskTags.join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateSummary() {
+            const total = filteredMerchants.length;
+            const excellent = filteredMerchants.filter(m => getRatingClass(m.completionRate, m.tradeCount, m.responseTime) === 'excellent').length;
+            const avgCompletion = total > 0 ? (filteredMerchants.reduce((sum, m) => sum + m.completionRate, 0) / total).toFixed(1) : 0;
+            const avgResponse = total > 0 ? (filteredMerchants.reduce((sum, m) => sum + m.responseTime, 0) / total).toFixed(1) : 0;
+            const totalVol = filteredMerchants.reduce((sum, m) => sum + m.volume, 0);
+            const riskScore = total > 0 ? (100 - avgCompletion + (avgResponse * 2)).toFixed(1) : 0;
+
+            document.getElementById('totalMerchants').textContent = total;
+            document.getElementById('excellentMerchants').textContent = excellent;
+            document.getElementById('avgCompletionRate').textContent = avgCompletion + '%';
+            document.getElementById('avgResponseTime').textContent = avgResponse + 'm';
+            document.getElementById('totalVolume').textContent = formatVolume(totalVol);
+            document.getElementById('riskScore').textContent = Math.max(0, Math.min(100, riskScore)) + '%';
+
+            document.getElementById('analysisSummary').style.display = 'block';
+        }
+
+        function renderTopMerchants() {
+            const topMerchants = filteredMerchants
+                .sort((a, b) => {
+                    const scoreA = a.completionRate + (a.tradeCount / 100) - a.responseTime;
+                    const scoreB = b.completionRate + (b.tradeCount / 100) - b.responseTime;
+                    return scoreB - scoreA;
+                })
+                .slice(0, 3);
+
+            const container = document.getElementById('topMerchantsContainer');
+            container.innerHTML = topMerchants.map(merchant => `
+                <div style="background: #0f172a; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: bold; color: #06b6d4;">${merchant.name}</div>
+                            <div style="color: #94a3b8; font-size: 0.9em;">${getPlatformName(merchant.platform)}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: #10b981; font-weight: bold;">${merchant.completionRate}%</div>
+                            <div style="color: #94a3b8; font-size: 0.9em;">${merchant.responseTime}m response</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderRiskAssessment() {
+            const highRisk = filteredMerchants.filter(m => m.riskLevel === 'high' || m.completionRate < 97).length;
+            const mediumRisk = filteredMerchants.filter(m => m.riskLevel === 'medium' && m.completionRate >= 97).length;
+            const lowRisk = filteredMerchants.filter(m => m.riskLevel === 'low' && m.completionRate >= 99).length;
+
+            const container = document.getElementById('riskAssessmentContainer');
+            container.innerHTML = `
+                <div style="margin: 15px 0;">
+                    <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                        <span>Low Risk:</span>
+                        <span style="color: #10b981; font-weight: bold;">${lowRisk} merchants</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                        <span>Medium Risk:</span>
+                        <span style="color: #f59e0b; font-weight: bold;">${mediumRisk} merchants</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                        <span>High Risk:</span>
+                        <span style="color: #ef4444; font-weight: bold;">${highRisk} merchants</span>
+                    </div>
+                </div>
+                <div style="background: #0f172a; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                    <div style="color: #06b6d4; font-weight: bold; margin-bottom: 10px;">Recommendation:</div>
+                    <div style="color: #94a3b8; font-size: 0.9em;">
+                        Focus on the ${lowRisk} low-risk merchants for consistent, reliable trading.
+                        ${highRisk > 0 ? `Avoid the ${highRisk} high-risk merchants.` : 'No high-risk merchants in current filter.'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function analyzeMerchants() {
+            applyFilters();
+            
+            // Update all sections
+            updateSummary();
+            renderTopMerchants();
+            renderRiskAssessment();
+            
+            // Render full merchant list
+            const container = document.getElementById('merchantListContainer');
+            if (filteredMerchants.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;">No merchants match the current filters.</div>';
+            } else {
+                container.innerHTML = filteredMerchants.map(renderMerchantCard).join('');
+            }
+        }
+
+        function refreshData() {
+            // Simulate data refresh
+            document.getElementById('merchantListContainer').innerHTML = '<div class="loading">Refreshing merchant data...</div>';
+            setTimeout(() => {
+                analyzeMerchants();
+            }, 1500);
+        }
+
+        function exportAnalysis() {
+            const data = {
+                summary: {
+                    total: filteredMerchants.length,
+                    excellent: filteredMerchants.filter(m => getRatingClass(m.completionRate, m.tradeCount, m.responseTime) === 'excellent').length,
+                    avgCompletion: filteredMerchants.reduce((sum, m) => sum + m.completionRate, 0) / filteredMerchants.length,
+                    totalVolume: filteredMerchants.reduce((sum, m) => sum + m.volume, 0)
+                },
+                merchants: filteredMerchants
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `p2p_merchant_analysis_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Initialize with default analysis
+        window.onload = function() {
+            analyzeMerchants();
+        };
+    </script>
+</body>
+</html>
