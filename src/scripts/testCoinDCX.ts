@@ -75,7 +75,7 @@ async function testCoinDCX() {
       });
     });
 
-    client.on('orderbook', (data) => {
+    client.on('orderbook', (_data) => {
       console.log('✓ Received orderbook update');
     });
 

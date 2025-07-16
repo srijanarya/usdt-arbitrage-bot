@@ -252,9 +252,9 @@ export class BinanceClient extends EventEmitter {
     }
 
     // Create listen key for user data stream
-    if (this.apiKey && this.apiSecret) {
+    if (this.apiKey && this.apiSecret && this.apiKey !== '' && this.apiSecret !== '') {
       try {
-        const response = await this.makeRequest('POST', '/api/v3/userDataStream');
+        const response = await this.makeRequest('POST', '/api/v3/userDataStream', {}, true);
         this.listenKey = response.listenKey;
         
         // Keep listen key alive every 30 minutes

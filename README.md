@@ -142,4 +142,43 @@ For questions about the implementation, refer to:
 - TypeScript/Node.js documentation
 
 Ready to start? Run `./setup.sh` now! 🚀
+
+## 🎯 **QUICK START (No API Keys Required)**
+
+For immediate testing without any setup:
+
+```bash
+# Start the simple monitor (works immediately)
+./start-simple.sh
+```
+
+This will start a working arbitrage monitor at `http://localhost:3000` using public APIs only.
+
+## 🔧 **Full Setup (With API Keys)**
+
+For complete functionality with real trading capabilities:
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Copy environment file
+cp .env.example .env
+
+# 3. Edit .env with your API keys (optional)
+
+# 4. Start full system
+npm run dev
+```
+
+## ✅ **What's Working:**
+
+- ✅ Real-time price monitoring from Binance, CoinGecko
+- ✅ Arbitrage opportunity detection
+- ✅ Web dashboard with live updates
+- ✅ REST API endpoints
+- ✅ USDT/USDC spread analysis
+- ✅ Fee calculations (0.1% + 1% TDS for Indian exchanges)
+- ✅ Multi-exchange support (CoinDCX, ZebPay, Binance, KuCoin, CoinSwitch)
+
 >>>>>>> 57ec8c0 (Initial commit: Automated project setup)

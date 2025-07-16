@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Localhost Connection Fix Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e74c3c;
+            border-bottom: 3px solid #e74c3c;
+            padding-bottom: 10px;
+        }
+        .diagnostic {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .solution {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .command {
+            background: #2d3436;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .step {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .error {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .fail {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Localhost Connection Issue - Quick Fix Guide</h1>
+        
+        <div class="error">
+            <h3>Current Problem:</h3>
+            <p><strong>Symptom:</strong> Server appears to start but browser shows "This site can't be reached" at http://localhost:3000</p>
+            <p><strong>Your Output:</strong> Shows "Server running" but no actual connection</p>
+        </div>
+
+        <div class="solution">
+            <h2>🚀 Quick Fix (Copy & Run This):</h2>
+            <div class="command">
+cd /Users/srijan/Desktop/usdt-arbitrage-bot && chmod +x fix-localhost.sh && ./fix-localhost.sh
+            </div>
+            <p>This will automatically diagnose and fix the issue!</p>
+        </div>
+
+        <div class="diagnostic">
+            <h2>🔍 Manual Diagnosis Steps:</h2>
+            
+            <div class="step">
+                <h3>Step 1: Check if port 3000 is actually in use</h3>
+                <div class="command">lsof -i :3000</div>
+                <p><span class="success">✅ If output shows:</span> A process is using the port</p>
+                <p><span class="fail">❌ If no output:</span> Nothing is listening (server not binding)</p>
+            </div>
+
+            <div class="step">
+                <h3>Step 2: Kill any existing process</h3>
+                <div class="command">lsof -ti:3000 | xargs kill -9</div>
+            </div>
+
+            <div class="step">
+                <h3>Step 3: Check Express installation</h3>
+                <div class="command">cd /Users/srijan/Desktop/usdt-arbitrage-bot && ls node_modules/express</div>
+                <p><span class="fail">❌ If "No such file":</span> Express not installed</p>
+                <div class="command">npm install express axios</div>
+            </div>
+
+            <div class="step">
+                <h3>Step 4: Test with minimal server</h3>
+                <div class="command">node -e "require('http').createServer((req,res)=>res.end('Working!')).listen(3000,()=>console.log('Open http://localhost:3000'))"</div>
+            </div>
+        </div>
+
+        <div class="solution">
+            <h2>✅ Complete Solution Script:</h2>
+            <p>Create and run this test file:</p>
+            <div class="command">cat > test-server-fix.js << 'EOF'
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send('<h1>✅ Fixed! Server is working!</h1>');
+});
+
+const server = app.listen(3000, '0.0.0.0', () => {
+  console.log('✅ Server working at http://localhost:3000');
+}).on('error', (err) => {
+  console.error('❌ Error:', err.message);
+  if (err.code === 'EADDRINUSE') {
+    console.log('Fix: lsof -ti:3000 | xargs kill -9');
+  }
+});
+EOF
+
+node test-server-fix.js</div>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ Common Issues & Solutions:</h3>
+            <ul>
+                <li><strong>Express not installed:</strong> Run <code>npm install express</code></li>
+                <li><strong>Wrong binding:</strong> Use <code>0.0.0.0</code> instead of <code>127.0.0.1</code></li>
+                <li><strong>Silent failures:</strong> Add proper error handlers</li>
+                <li><strong>Firewall blocking:</strong> Check macOS firewall settings</li>
+                <li><strong>IPv6 issues:</strong> Try <code>http://[::1]:3000</code></li>
+            </ul>
+        </div>
+
+        <div class="diagnostic">
+            <h2>🔧 Alternative Solutions:</h2>
+            
+            <div class="step">
+                <h3>Option 1: Use Python Instead</h3>
+                <div class="command">cd /Users/srijan/Desktop/usdt-arbitrage-bot
+python3 -m http.server 3000</div>
+                <p>Then open: http://localhost:3000/simple-dashboard.html</p>
+            </div>
+
+            <div class="step">
+                <h3>Option 2: Use Different Port</h3>
+                <div class="command">PORT=8080 node quick-start.js</div>
+                <p>Then open: http://localhost:8080</p>
+            </div>
+
+            <div class="step">
+                <h3>Option 3: Use npx serve</h3>
+                <div class="command">npx serve -l 3000</div>
+            </div>
+        </div>
+
+        <div class="solution">
+            <h2>📱 Test Your Fix:</h2>
+            <button onclick="testConnection()">Test http://localhost:3000</button>
+            <button onclick="window.open('http://localhost:3000', '_blank')">Open in New Tab</button>
+            <div id="testResult"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = '<p>Testing connection...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:3000', { 
+                    mode: 'no-cors',
+                    cache: 'no-cache'
+                });
+                resultDiv.innerHTML = '<p class="success">✅ Connection might be working! Check browser tab.</p>';
+            } catch (error) {
+                resultDiv.innerHTML = '<p class="fail">❌ Connection failed. Run the fix script above.</p>';
+            }
+        }
+    </script>
+</body>
+</html>

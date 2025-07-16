@@ -46,7 +46,7 @@ async function testDatabase() {
     console.log('\n✅ Database test completed successfully!');
     
   } catch (error) {
-    console.error('❌ Database test failed:', error.message);
+    console.error('❌ Database test failed:', error instanceof Error ? error.message : error);
     console.log('\n💡 Make sure:');
     console.log('   1. PostgreSQL is running');
     console.log('   2. Database "arbitrage_bot" exists');
