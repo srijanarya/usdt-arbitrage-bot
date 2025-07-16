@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your 30-Minute Tasks - USDT Arbitrage Bot</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        .task {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            position: relative;
+        }
+        .task-number {
+            position: absolute;
+            left: -20px;
+            top: 15px;
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .task h3 {
+            margin-top: 0;
+            color: #333;
+            padding-left: 30px;
+        }
+        .cursor-prompt {
+            background: #e3f2fd;
+            border: 2px dashed #2196f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .file-path {
+            background: #263238;
+            color: #aed581;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .shortcut {
+            background: #ffeb3b;
+            color: #333;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        .api-links {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .api-links a {
+            color: #856404;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .api-links a:hover {
+            text-decoration: underline;
+        }
+        .timer {
+            text-align: center;
+            font-size: 3em;
+            color: #667eea;
+            margin: 30px 0;
+            font-weight: bold;
+        }
+        .completion-check {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        .completion-check input {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+        .success-message {
+            background: #4caf50;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+            font-size: 1.2em;
+        }
+        .warning {
+            background: #ff5252;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Your 30-Minute Tasks</h1>
+        <p class="subtitle">I've done 90% of the work. You just need to activate Cursor's AI!</p>
+        
+        <div class="warning">
+            ⚠️ Remember: NO MANUAL CODING! Use Cmd+K for EVERYTHING!
+        </div>
+
+        <div class="timer" id="timer">30:00</div>
+
+        <div class="task">
+            <div class="task-number">1</div>
+            <h3>Open Cursor IDE</h3>
+            <p>Open the project folder in Cursor:</p>
+            <div class="file-path">/Users/srijan/Desktop/usdt-arbitrage-bot</div>
+            <div class="completion-check">
+                <input type="checkbox" id="task1" onchange="checkProgress()">
+                <label for="task1">✓ Cursor is open with the project</label>
+            </div>
+        </div>
+
+        <div class="task">
+            <div class="task-number">2</div>
+            <h3>Enhance TypeScript Types</h3>
+            <p>Open <span class="file-path">src/types/index.ts</span></p>
+            <p>Press <span class="shortcut">Cmd+K</span> and paste:</p>
+            <div class="cursor-prompt">Create comprehensive TypeScript types for crypto arbitrage trading including ExchangePrice, ArbitrageOpportunity, TradeOrder, and all necessary interfaces</div>
+            <div class="completion-check">
+                <input type="checkbox" id="task2" onchange="checkProgress()">
+                <label for="task2">✓ Types generated with AI</label>
+            </div>
+        </div>
+
+        <div class="task">
+            <div class="task-number">3</div>
+            <h3>Complete Database Configuration</h3>
+            <p>Open <span class="file-path">src/config/database.ts</span></p>
+            <p>Press <span class="shortcut">Cmd+K</span> and paste:</p>
+            <div class="cursor-prompt">Complete PostgreSQL configuration with connection pooling, error handling, and query helpers for arbitrage bot</div>
+            <div class="completion-check">
+                <input type="checkbox" id="task3" onchange="checkProgress()">
+                <label for="task3">✓ Database config enhanced</label>
+            </div>
+        </div>
+
+        <div class="task">
+            <div class="task-number">4</div>
+            <h3>Build Main Server</h3>
+            <p>Open <span class="file-path">src/index.ts</span></p>
+            <p>Press <span class="shortcut">Cmd+K</span> and paste:</p>
+            <div class="cursor-prompt">Complete Express + WebSocket server with health endpoints, graceful shutdown, and integration with PriceScanner service</div>
+            <div class="completion-check">
+                <input type="checkbox" id="task4" onchange="checkProgress()">
+                <label for="task4">✓ Server code generated</label>
+            </div>
+        </div>
+
+        <div class="task">
+            <div class="task-number">5</div>
+            <h3>Create CoinDCX Client</h3>
+            <p>Open <span class="file-path">src/api/exchanges/coinDCX.ts</span></p>
+            <p>Press <span class="shortcut">Cmd+K</span> and paste:</p>
+            <div class="cursor-prompt">Implement complete CoinDCX WebSocket client with connection to wss://stream.coindcx.com, USDTINR orderbook subscription, auto-reconnection, HMAC authentication, and rate limiting</div>
+            <div class="completion-check">
+                <input type="checkbox" id="task5" onchange="checkProgress()">
+                <label for="task5">✓ CoinDCX client created</label>
+            </div>
+        </div>
+
+        <div class="task">
+            <div class="task-number">6</div>
+            <h3>Create ZebPay Client</h3>
+            <p>Open <span class="file-path">src/api/exchanges/zebPay.ts</span></p>
+            <p>Press <span class="shortcut">Cmd+K</span> and paste:</p>
+            <div class="cursor-prompt">Implement ZebPay REST client with 2-second polling for USDT-INR ticker, proper authentication, rate limiting, and error handling</div>
+            <div class="completion-check">
+                <input type="checkbox" id="task6" onchange="checkProgress()">
+                <label for="task6">✓ ZebPay client created</label>
+            </div>
+        </div>
+
+        <div class="task">
+            <div class="task-number">7</div>
+            <h3>Build Price Scanner</h3>
+            <p>Open <span class="file-path">src/services/priceScanner/index.ts</span></p>
+            <p>Press <span class="shortcut">Cmd+K</span> and paste:</p>
+            <div class="cursor-prompt">Create complete arbitrage scanner that monitors both exchanges, calculates profit after all fees including 1% TDS, filters by minimum threshold, stores opportunities in PostgreSQL, and emits events for alerts</div>
+            <div class="completion-check">
+                <input type="checkbox" id="task7" onchange="checkProgress()">
+                <label for="task7">✓ Scanner implemented</label>
+            </div>
+        </div>
+
+        <div class="task">
+            <div class="task-number">8</div>
+            <h3>Get API Keys</h3>
+            <div class="api-links">
+                <p><strong>CoinDCX:</strong> <a href="https://coindcx.com/api-dashboard" target="_blank">https://coindcx.com/api-dashboard</a></p>
+                <p><strong>ZebPay:</strong> <a href="https://zebpay.com/api" target="_blank">https://zebpay.com/api</a></p>
+            </div>
+            <p>1. Create accounts if needed</p>
+            <p>2. Complete KYC verification</p>
+            <p>3. Generate API keys (READ-ONLY first for testing)</p>
+            <div class="completion-check">
+                <input type="checkbox" id="task8" onchange="checkProgress()">
+                <label for="task8">✓ API keys obtained</label>
+            </div>
+        </div>
+
+        <div class="task">
+            <div class="task-number">9</div>
+            <h3>Configure Environment</h3>
+            <p>In Terminal:</p>
+            <div class="cursor-prompt">cp .env.example .env</div>
+            <p>Then edit <span class="file-path">.env</span> and add your API keys</p>
+            <div class="completion-check">
+                <input type="checkbox" id="task9" onchange="checkProgress()">
+                <label for="task9">✓ API keys added to .env</label>
+            </div>
+        </div>
+
+        <div class="task">
+            <div class="task-number">10</div>
+            <h3>Start the Bot!</h3>
+            <p>In Cursor's terminal (<span class="shortcut">Ctrl+`</span>):</p>
+            <div class="cursor-prompt">npm run dev</div>
+            <p>You should see: "Server running on port 3000"</p>
+            <div class="completion-check">
+                <input type="checkbox" id="task10" onchange="checkProgress()">
+                <label for="task10">✓ Bot is running!</label>
+            </div>
+        </div>
+
+        <div class="success-message" id="success">
+            🎉 Congratulations! Your USDT Arbitrage Bot is Running!<br>
+            Open http://localhost:3000 to see the dashboard
+        </div>
+    </div>
+
+    <script>
+        // Timer
+        let timeLeft = 30 * 60; // 30 minutes in seconds
+        const timerElement = document.getElementById('timer');
+        
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeLeft > 0) {
+                timeLeft--;
+            } else {
+                timerElement.style.color = '#ff5252';
+            }
+        }
+        
+        setInterval(updateTimer, 1000);
+        
+        // Progress checker
+        function checkProgress() {
+            const tasks = document.querySelectorAll('input[type="checkbox"]');
+            const completed = Array.from(tasks).filter(task => task.checked).length;
+            const total = tasks.length;
+            
+            if (completed === total) {
+                document.getElementById('success').style.display = 'block';
+                timerElement.style.color = '#4caf50';
+                timerElement.textContent = 'COMPLETE!';
+            }
+            
+            // Update progress color
+            const progress = completed / total;
+            if (progress >= 0.5) {
+                timerElement.style.color = '#ff9800';
+            }
+            if (progress >= 0.8) {
+                timerElement.style.color = '#4caf50';
+            }
+        }
+    </script>
+</body>
+</html>
