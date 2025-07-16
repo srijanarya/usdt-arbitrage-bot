@@ -1,4 +1,5 @@
 import { ZebPayClient } from './api/exchanges/zebPay';
+import { CoinDCXClient } from './api/exchanges/coinDCX';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -13,17 +14,22 @@ interface PriceData {
 
 class ArbitrageMonitor {
   private zebpay: ZebPayClient;
+  private coindcx: CoinDCXClient | null = null;
   private prices: Map<string, PriceData> = new Map();
+  private useMockCoinDCX: boolean = false;
   
   constructor() {
     this.zebpay = new ZebPayClient();
+    
+    // Initialize CoinDCX - we'll use mock data for now
+    this.useMockCoinDCX = true;
   }
   
-  start() {
+  async start() {
     console.log('🚀 Starting USDT Arbitrage Monitor...\n');
     console.log('📊 Monitoring prices from:');
     console.log('   - ZebPay (Real)');
-    console.log('   - CoinDCX (Mocked until API keys arrive)\n');
+    console.log(`   - CoinDCX (${this.useMockCoinDCX ? 'Mocked - Add API keys to use real data' : 'Real'})\n`);
     console.log('═'.repeat(60));
     
     // Monitor ZebPay prices
@@ -39,8 +45,69 @@ class ArbitrageMonitor {
     // Start monitoring
     this.zebpay.startPriceMonitoring('USDT-INR', 3000);
     
-    // Mock CoinDCX prices
-    this.startMockCoinDCX();
+    if (this.useMockCoinDCX) {
+      // Mock CoinDCX prices
+      this.startMockCoinDCX();
+    } else {
+      // Monitor real CoinDCX prices
+      await this.startRealCoinDCX();
+    }
+  }
+  
+  private async startRealCoinDCX() {
+    if (!this.coindcx) return;
+    
+    // Poll CoinDCX prices every 3 seconds
+    const pollCoinDCX = async () => {
+      try {
+        const ticker = await this.coindcx!.getTicker();
+        const priceData: PriceData = {
+          exchange: 'CoinDCX',
+          bid: parseFloat(ticker.bid),
+          ask: parseFloat(ticker.ask),
+          last: parseFloat(ticker.bid), // Using bid as last price
+          timestamp: new Date()
+        };
+        
+        this.prices.set('CoinDCX', priceData);
+        this.checkArbitrage();
+      } catch (error: any) {
+        console.error('CoinDCX Error:', error.message);
+      }
+    };
+    
+    // Initial poll
+    await pollCoinDCX();
+    
+    // Poll every 3 seconds
+    setInterval(pollCoinDCX, 3000);
+    
+    // Also connect to WebSocket for real-time updates
+    this.coindcx.on('connected', () => {
+      console.log('✓ Connected to CoinDCX WebSocket');
+    });
+    
+    this.coindcx.on('ticker', (data) => {
+      const priceData: PriceData = {
+        exchange: 'CoinDCX',
+        bid: parseFloat(data.bid || data.b || '0'),
+        ask: parseFloat(data.ask || data.a || '0'),
+        last: parseFloat(data.last || data.l || '0'),
+        timestamp: new Date()
+      };
+      
+      if (priceData.bid > 0 && priceData.ask > 0) {
+        this.prices.set('CoinDCX', priceData);
+        this.checkArbitrage();
+      }
+    });
+    
+    this.coindcx.on('error', (error) => {
+      console.error('CoinDCX WebSocket Error:', error.message);
+    });
+    
+    // Connect to WebSocket
+    this.coindcx.connect();
   }
   
   private startMockCoinDCX() {
@@ -76,7 +143,7 @@ class ArbitrageMonitor {
     // Display current prices
     console.log('\n📊 Current Prices:');
     console.log(`   ZebPay:  Buy: ₹${zebpay.bid.toFixed(2)} | Sell: ₹${zebpay.ask.toFixed(2)} | Last: ₹${zebpay.last.toFixed(2)}`);
-    console.log(`   CoinDCX: Buy: ₹${coindcx.bid.toFixed(2)} | Sell: ₹${coindcx.ask.toFixed(2)} | Last: ₹${coindcx.last.toFixed(2)} (mock)`);
+    console.log(`   CoinDCX: Buy: ₹${coindcx.bid.toFixed(2)} | Sell: ₹${coindcx.ask.toFixed(2)} | Last: ₹${coindcx.last.toFixed(2)}${this.useMockCoinDCX ? ' (mock)' : ''}`);
     
     // Calculate arbitrage opportunities
     console.log('\n💰 Arbitrage Analysis:');
@@ -143,5 +210,10 @@ class ArbitrageMonitor {
 }
 
 // Start the monitor
-const monitor = new ArbitrageMonitor();
-monitor.start();
+export { ArbitrageMonitor };
+
+// Only start if run directly
+if (require.main === module) {
+  const monitor = new ArbitrageMonitor();
+  monitor.start();
+}

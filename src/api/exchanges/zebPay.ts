@@ -9,14 +9,23 @@ interface ZebPayTicker {
   market: string;
   buy: string;
   sell: string;
-  volume: string;
-  priceChange: string;
+  volume: number;
+  pricechange: string;
+  volumeEx: number;
+  volumeQt: number;
+  '24hoursHigh': string;
+  '24hoursLow': string;
+  quickTradePrice: string;
+  quickTradePriceChange: string;
+  pair: string;
+  virtualCurrency: string;
+  currency: string;
 }
 
 export class ZebPayClient extends EventEmitter {
   private apiKey: string;
   private apiSecret: string;
-  private baseURL = 'https://api.zebpay.com';
+  private baseURL = 'https://www.zebapi.com';
   private client: AxiosInstance;
 
   constructor() {
@@ -46,36 +55,39 @@ export class ZebPayClient extends EventEmitter {
     const signature = this.generateSignature(method, endpoint, body);
     
     return {
-      'X-API-KEY': this.apiKey,
-      'X-SIGNATURE': signature,
+      'X-AUTH-APIKEY': this.apiKey,
+      'X-AUTH-SIGNATURE': signature,
       'X-TIMESTAMP': timestamp,
       'Content-Type': 'application/json'
     };
   }
 
   async getPrice(pair: string): Promise<number> {
+    const endpoint = `/pro/v1/market/${pair}/ticker`;
     try {
-      const response = await this.client.get<ZebPayTicker>(`/api/v1/market/ticker/${pair}`);
+      const response = await this.client.get<ZebPayTicker>(endpoint);
       return parseFloat(response.data.market);
-    } catch (error) {
+    } catch (error: any) {
       console.error('ZebPay getPrice error:', error);
       throw error;
     }
   }
 
   async getTicker(pair: string): Promise<ZebPayTicker> {
+    const endpoint = `/pro/v1/market/${pair}/ticker`;
     try {
-      const response = await this.client.get<ZebPayTicker>(`/api/v1/market/ticker/${pair}`);
+      const response = await this.client.get<ZebPayTicker>(endpoint);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('ZebPay getTicker error:', error);
       throw error;
     }
   }
 
   async getOrderBook(pair: string): Promise<any> {
+    const endpoint = `/pro/v1/market/${pair}/book`;
     try {
-      const response = await this.client.get(`/api/v1/market/depth/${pair}`);
+      const response = await this.client.get(endpoint);
       return response.data;
     } catch (error) {
       console.error('ZebPay getOrderBook error:', error);

@@ -1,4 +1,4 @@
-// READY FOR CURSOR: Press Cmd+K and say "Create Express + WebSocket server for crypto arbitrage with graceful shutdown"
+// Server-only startup (without console spam from monitor)
 import express from 'express';
 import http from 'http';
 import { WebSocketServer } from 'ws';
@@ -7,7 +7,6 @@ import helmet from 'helmet';
 import compression from 'compression';
 import cors from 'cors';
 import path from 'path';
-// import { PriceScanner } from './services/priceScanner';
 import { MultiExchangeMonitor } from './monitorMultiExchange';
 import apiRoutes, { setMonitor, addHistoricalDataPoint } from './routes/api';
 
@@ -39,15 +38,26 @@ app.get('/health', (_req, res) => {
 const monitor = new MultiExchangeMonitor();
 setMonitor(monitor);
 
+// Override console.log for monitor to prevent spam
+const originalLog = console.log;
+console.log = (...args) => {
+  // Only show important messages
+  const message = args.join(' ');
+  if (message.includes('Server running') || 
+      message.includes('Error') || 
+      message.includes('WebSocket') ||
+      message.includes('connected')) {
+    originalLog(...args);
+  }
+};
+
 // WebSocket connection handling
 wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ message: 'WebSocket connection established' }));
-  console.log('New WebSocket client connected');
-  console.log('Total connected clients:', wss.clients.size);
+  originalLog('New WebSocket client connected');
   
   ws.on('close', () => {
-    console.log('WebSocket client disconnected');
-    console.log('Total connected clients:', wss.clients.size);
+    originalLog('WebSocket client disconnected');
   });
 });
 
@@ -82,12 +92,13 @@ monitor.on('error', (error) => {
   broadcastToClients('error', { message: error.message });
 });
 
-// Start monitoring after server is ready
+// Start server
 const PORT = parseInt(process.env.PORT || '3000', 10);
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Dashboard: http://localhost:${PORT}`);
-  console.log(`API Status: http://localhost:${PORT}/api/system-status`);
+  originalLog(`\n✅ Server running on http://localhost:${PORT}`);
+  originalLog(`📊 Dashboard: http://localhost:${PORT}`);
+  originalLog(`🔌 API Status: http://localhost:${PORT}/api/system-status`);
+  originalLog(`📡 WebSocket: ws://localhost:${PORT}\n`);
   
   // Start monitoring after server is listening
   monitor.start().catch(console.error);

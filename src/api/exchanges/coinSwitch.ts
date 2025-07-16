@@ -3,18 +3,18 @@ import crypto from 'crypto';
 import axios, { AxiosInstance } from 'axios';
 import EventEmitter from 'events';
 
-interface CoinDCXOptions {
+interface CoinSwitchOptions {
   apiKey: string;
   apiSecret: string;
   testMode?: boolean;
 }
 
 interface OrderRequest {
-  market: string;
+  symbol: string;
   side: 'buy' | 'sell';
-  price_per_unit?: number;
-  total_quantity?: number;
-  order_type: 'limit_order' | 'market_order';
+  type: 'limit' | 'market';
+  quantity: number;
+  price?: number;
 }
 
 interface Balance {
@@ -24,15 +24,24 @@ interface Balance {
 }
 
 interface Ticker {
-  ask: string;
+  symbol: string;
   bid: string;
+  ask: string;
+  last: string;
+  volume: string;
   high: string;
   low: string;
-  volume: string;
+  change: string;
+  change_percent: string;
+}
+
+interface OrderBook {
+  bids: [string, string][];
+  asks: [string, string][];
   timestamp: number;
 }
 
-export class CoinDCXClient extends EventEmitter {
+export class CoinSwitchClient extends EventEmitter {
   private ws: WebSocket | null = null;
   private apiKey: string;
   private apiSecret: string;
@@ -47,39 +56,39 @@ export class CoinDCXClient extends EventEmitter {
   private pingInterval: NodeJS.Timeout | null = null;
   private isConnected: boolean = false;
 
-  constructor(options: CoinDCXOptions) {
+  constructor(options: CoinSwitchOptions) {
     super();
     this.apiKey = options.apiKey;
     this.apiSecret = options.apiSecret;
-    this.baseURL = options.testMode ? 'https://api.coindcx.com' : 'https://api.coindcx.com';
-    this.wsURL = options.testMode ? 'wss://stream.coindcx.com' : 'wss://stream.coindcx.com';
+    this.baseURL = options.testMode ? 'https://coinswitch.co' : 'https://coinswitch.co';
+    this.wsURL = options.testMode ? 'wss://ws.coinswitch.co/pro/realtime-rates-socket/spot/coinswitchx' : 'wss://ws.coinswitch.co/pro/realtime-rates-socket/spot/coinswitchx';
     
     this.client = axios.create({
       baseURL: this.baseURL,
       timeout: 10000,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       }
     });
   }
 
   connect() {
     if (this.isConnected) {
-      console.log('Already connected to CoinDCX WebSocket');
+      console.log('Already connected to CoinSwitch WebSocket');
       return;
     }
 
     this.ws = new WebSocket(this.wsURL);
     
     this.ws.on('open', () => {
-      console.log('Connected to CoinDCX WebSocket');
+      console.log('Connected to CoinSwitch WebSocket');
       this.isConnected = true;
       this.reconnectAttempts = 0;
       this.emit('connected');
       
-      // Subscribe to USDT/INR market
-      this.subscribeTicker();
-      this.subscribeOrderBook();
+      // Subscribe to USDT/INR streams
+      this.subscribeToTicker();
+      this.subscribeToOrderBook();
       
       // Setup ping to keep connection alive
       this.setupPing();
@@ -89,11 +98,11 @@ export class CoinDCXClient extends EventEmitter {
       try {
         const message = JSON.parse(data.toString());
         
-        if (message.event === 'ticker-update') {
+        if (message.type === 'ticker' && message.symbol === 'USDT/INR') {
           this.emit('ticker', message.data);
-        } else if (message.event === 'depth-update') {
+        } else if (message.type === 'orderbook' && message.symbol === 'USDT/INR') {
           this.emit('orderbook', message.data);
-        } else if (message.event === 'error') {
+        } else if (message.type === 'error') {
           this.emit('error', new Error(message.message || 'WebSocket error'));
         }
       } catch (error) {
@@ -102,7 +111,7 @@ export class CoinDCXClient extends EventEmitter {
     });
 
     this.ws.on('close', () => {
-      console.log('Disconnected from CoinDCX WebSocket');
+      console.log('Disconnected from CoinSwitch WebSocket');
       this.isConnected = false;
       this.clearPing();
       
@@ -117,7 +126,7 @@ export class CoinDCXClient extends EventEmitter {
     });
 
     this.ws.on('error', (err) => {
-      console.error('CoinDCX WebSocket error:', err);
+      console.error('CoinSwitch WebSocket error:', err);
       this.emit('error', err);
     });
   }
@@ -134,7 +143,7 @@ export class CoinDCXClient extends EventEmitter {
   private setupPing() {
     this.pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.ping();
+        this.ws.send(JSON.stringify({ type: 'ping' }));
       }
     }, 30000);
   }
@@ -146,28 +155,30 @@ export class CoinDCXClient extends EventEmitter {
     }
   }
 
-  private subscribeTicker() {
+  private subscribeToTicker() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       const subscribeMessage = {
-        event: 'join',
-        streams: ['I-USDT_INR@ticker']
+        type: 'subscribe',
+        channel: 'ticker',
+        symbol: 'USDT/INR'
       };
       this.ws.send(JSON.stringify(subscribeMessage));
     }
   }
 
-  private subscribeOrderBook() {
+  private subscribeToOrderBook() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       const subscribeMessage = {
-        event: 'join',
-        streams: ['I-USDT_INR@depth']
+        type: 'subscribe',
+        channel: 'orderbook',
+        symbol: 'USDT/INR'
       };
       this.ws.send(JSON.stringify(subscribeMessage));
     }
   }
 
   private getTimestamp(): number {
-    return Math.floor(Date.now() / 1000);
+    return Date.now();
   }
 
   private createSignature(payload: string): string {
@@ -180,15 +191,17 @@ export class CoinDCXClient extends EventEmitter {
   private async makeAuthenticatedRequest(method: string, path: string, body?: any): Promise<any> {
     await this.rateLimitCheck();
 
+    const timestamp = this.getTimestamp().toString();
     const requestBody = body ? JSON.stringify(body) : '';
     
-    // Create payload for signature
-    const payloadToSign = requestBody || '';
+    // Create payload for signature: timestamp + method + path + body
+    const payloadToSign = timestamp + method.toUpperCase() + path + requestBody;
     const signature = this.createSignature(payloadToSign);
 
     const headers = {
       'X-AUTH-APIKEY': this.apiKey,
       'X-AUTH-SIGNATURE': signature,
+      'X-AUTH-TIMESTAMP': timestamp,
       'Content-Type': 'application/json'
     };
 
@@ -203,7 +216,7 @@ export class CoinDCXClient extends EventEmitter {
       return response.data;
     } catch (error: any) {
       if (error.response) {
-        throw new Error(`CoinDCX API Error: ${error.response.data.message || error.response.statusText}`);
+        throw new Error(`CoinSwitch API Error: ${error.response.data.message || error.response.statusText}`);
       }
       throw error;
     }
@@ -220,25 +233,28 @@ export class CoinDCXClient extends EventEmitter {
   }
 
   // Public API Methods (No authentication required)
-  async getTicker(market: string = 'I-USDT_INR'): Promise<Ticker> {
+  async getTicker(symbol: string = 'USDT/INR'): Promise<Ticker> {
     await this.rateLimitCheck();
     
     try {
-      const response = await this.client.get(`/exchange/ticker`, {
-        params: { market }
+      const response = await this.client.get('/trade/api/v2/24hr/ticker', {
+        params: { symbol }
       });
-      return response.data[0];
+      return response.data;
     } catch (error) {
       throw new Error(`Failed to get ticker: ${error}`);
     }
   }
 
-  async getOrderBook(market: string = 'I-USDT_INR'): Promise<any> {
+  async getOrderBook(symbol: string = 'USDT/INR', limit: number = 100): Promise<OrderBook> {
     await this.rateLimitCheck();
     
     try {
-      const response = await this.client.get(`/market_data/orderbook`, {
-        params: { pair: market }
+      const response = await this.client.get('/trade/api/v2/depth', {
+        params: { 
+          symbol,
+          limit 
+        }
       });
       return response.data;
     } catch (error) {
@@ -246,10 +262,21 @@ export class CoinDCXClient extends EventEmitter {
     }
   }
 
+  async getAllTickers(): Promise<Ticker[]> {
+    await this.rateLimitCheck();
+    
+    try {
+      const response = await this.client.get('/trade/api/v2/24hr/ticker');
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get all tickers: ${error}`);
+    }
+  }
+
   // Authenticated API Methods
   async getBalance(): Promise<Balance[]> {
-    const balances = await this.makeAuthenticatedRequest('POST', '/exchange/v1/users/balances', {});
-    return balances;
+    const result = await this.makeAuthenticatedRequest('GET', '/user/balances');
+    return result.balances || [];
   }
 
   async getUSDTBalance(): Promise<number> {
@@ -266,86 +293,92 @@ export class CoinDCXClient extends EventEmitter {
 
   async createOrder(order: OrderRequest): Promise<any> {
     const orderData = {
+      symbol: order.symbol,
       side: order.side,
-      order_type: order.order_type,
-      market: order.market,
-      price_per_unit: order.price_per_unit,
-      total_quantity: order.total_quantity,
-      timestamp: this.getTimestamp()
+      type: order.type,
+      quantity: order.quantity,
+      ...(order.price && { price: order.price })
     };
 
-    const result = await this.makeAuthenticatedRequest('POST', '/exchange/v1/orders/create', orderData);
+    const result = await this.makeAuthenticatedRequest('POST', '/user/orders', orderData);
     return result;
   }
 
   async getOrderStatus(orderId: string): Promise<any> {
-    const result = await this.makeAuthenticatedRequest('POST', '/exchange/v1/orders/status', {
-      id: orderId
-    });
+    const result = await this.makeAuthenticatedRequest('GET', `/user/orders/${orderId}`);
     return result;
   }
 
   async cancelOrder(orderId: string): Promise<any> {
-    const result = await this.makeAuthenticatedRequest('POST', '/exchange/v1/orders/cancel', {
-      id: orderId
-    });
+    const result = await this.makeAuthenticatedRequest('DELETE', `/user/orders/${orderId}`);
     return result;
   }
 
-  async getActiveOrders(market?: string): Promise<any[]> {
-    const body = market ? { market } : {};
-    const orders = await this.makeAuthenticatedRequest('POST', '/exchange/v1/orders/active_orders', body);
+  async getOpenOrders(symbol?: string): Promise<any[]> {
+    const params = symbol ? `?symbol=${symbol}` : '';
+    const orders = await this.makeAuthenticatedRequest('GET', `/user/orders/open${params}`);
     return orders.orders || [];
   }
 
-  async getTradeHistory(market?: string, limit: number = 100): Promise<any[]> {
-    const body = {
-      market,
-      limit
-    };
-    const trades = await this.makeAuthenticatedRequest('POST', '/exchange/v1/orders/trade_history', body);
+  async getTradeHistory(symbol?: string, limit: number = 100): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (symbol) params.append('symbol', symbol);
+    params.append('limit', limit.toString());
+    
+    const queryString = params.toString();
+    const path = `/user/trades${queryString ? '?' + queryString : ''}`;
+    
+    const trades = await this.makeAuthenticatedRequest('GET', path);
     return trades.trades || [];
   }
 
-  // Helper method to create a market buy order
-  async marketBuy(amount: number): Promise<any> {
+  // Helper methods for USDT/INR trading
+  async marketBuy(quantity: number): Promise<any> {
     return this.createOrder({
-      market: 'I-USDT_INR',
+      symbol: 'USDT/INR',
       side: 'buy',
-      order_type: 'market_order',
-      total_quantity: amount
+      type: 'market',
+      quantity
     });
   }
 
-  // Helper method to create a market sell order
-  async marketSell(amount: number): Promise<any> {
+  async marketSell(quantity: number): Promise<any> {
     return this.createOrder({
-      market: 'I-USDT_INR',
+      symbol: 'USDT/INR',
       side: 'sell',
-      order_type: 'market_order',
-      total_quantity: amount
+      type: 'market',
+      quantity
     });
   }
 
-  // Helper method to create a limit buy order
-  async limitBuy(amount: number, price: number): Promise<any> {
+  async limitBuy(quantity: number, price: number): Promise<any> {
     return this.createOrder({
-      market: 'I-USDT_INR',
+      symbol: 'USDT/INR',
       side: 'buy',
-      order_type: 'limit_order',
-      total_quantity: amount,
-      price_per_unit: price
+      type: 'limit',
+      quantity,
+      price
     });
   }
 
-  // Helper method to create a limit sell order
-  async limitSell(amount: number, price: number): Promise<any> {
+  async limitSell(quantity: number, price: number): Promise<any> {
     return this.createOrder({
-      market: 'I-USDT_INR',
+      symbol: 'USDT/INR',
       side: 'sell',
-      order_type: 'limit_order',
-      total_quantity: amount,
-      price_per_unit: price
+      type: 'limit',
+      quantity,
+      price
     });
+  }
+
+  // Get current USDT/INR price info
+  async getUSDTINRPrice(): Promise<{bid: number, ask: number, last: number}> {
+    const ticker = await this.getTicker('USDT/INR');
+    
+    return {
+      bid: parseFloat(ticker.bid || '0'),
+      ask: parseFloat(ticker.ask || '0'),
+      last: parseFloat(ticker.last || '0')
+    };
   }
 }

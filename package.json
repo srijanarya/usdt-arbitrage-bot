@@ -4,16 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node src/index.ts",
+    "dev": "nodemon --exec tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest",
-    "db:setup": "ts-node src/scripts/setupDatabase.ts"
+    "db:setup": "ts-node src/scripts/setupDatabase.ts",
+    "monitor": "tsx src/monitor.ts",
+    "monitor:cross": "tsx src/monitorCrossExchange.ts",
+    "monitor:multi": "tsx src/monitorMultiExchange.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/compression": "^1.8.1",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.0",

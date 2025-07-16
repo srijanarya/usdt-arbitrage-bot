@@ -1,4 +1,19 @@
-// READY FOR CURSOR: Press Cmd+K and say "Create a production logger with file rotation and log levels"
 export const logger = {
-  // Cursor will implement this
+  info: (message: string, ...args: any[]) => {
+    console.log(`[INFO] ${new Date().toISOString()} - ${message}`, ...args);
+  },
+  
+  error: (message: string, error?: any) => {
+    console.error(`[ERROR] ${new Date().toISOString()} - ${message}`, error);
+  },
+  
+  warn: (message: string, ...args: any[]) => {
+    console.warn(`[WARN] ${new Date().toISOString()} - ${message}`, ...args);
+  },
+  
+  debug: (message: string, ...args: any[]) => {
+    if (process.env.LOG_LEVEL === 'debug') {
+      console.log(`[DEBUG] ${new Date().toISOString()} - ${message}`, ...args);
+    }
+  }
 };
