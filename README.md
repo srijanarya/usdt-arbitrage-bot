@@ -1,184 +1,255 @@
-<<<<<<< HEAD
-# usdt-arbitrage-bot
-=======
-# USDT Arbitrage Bot - Quick Start Guide
+# 🚀 USDT Arbitrage Bot
 
-## 🚀 Project Setup Complete!
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 
-Your USDT arbitrage bot project structure has been created at:
-`/Users/srijan/Desktop/usdt-arbitrage-bot`
+A real-time cryptocurrency arbitrage bot that monitors USDT/USDC price differences across multiple exchanges to identify profitable trading opportunities.
 
-## 📋 Next Steps
+![Dashboard Screenshot](https://via.placeholder.com/800x400?text=USDT+Arbitrage+Bot+Dashboard)
 
-### 1. Install Prerequisites (5 minutes)
-Open Terminal and run:
+## ✨ Features
+
+- 🔄 **Real-time Price Monitoring** - WebSocket connections for instant price updates
+- 💹 **Multi-Exchange Support** - CoinDCX, ZebPay, Binance, KuCoin, CoinSwitch
+- 📊 **Live Web Dashboard** - Beautiful UI with auto-refresh capabilities
+- 🎯 **Smart Arbitrage Detection** - Considers trading fees and TDS (1% for Indian exchanges)
+- 📈 **REST API** - Access all data programmatically
+- 💾 **Database Integration** - PostgreSQL for historical data storage
+- 🔔 **Profit Alerts** - Get notified when opportunities arise
+- 🛡️ **Risk Management** - Built-in safety thresholds and limits
+
+## 🚀 Quick Start (No API Keys Required)
+
 ```bash
-cd /Users/srijan/Desktop/usdt-arbitrage-bot
-./setup.sh
+# Clone the repository
+git clone https://github.com/srijanarya/usdt-arbitrage-bot.git
+cd usdt-arbitrage-bot
+
+# Quick start with no setup
+./start-simple.sh
 ```
 
-This will install:
-- Homebrew (if not installed)
-- Node.js 18+
-- PostgreSQL
-- Git
+Open http://localhost:3000 in your browser to see the live dashboard!
 
-### 2. Initialize Project (2 minutes)
-After setup.sh completes, run:
+## 📋 Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+- PostgreSQL (optional, for full features)
+- Exchange API keys (optional, for trading)
+
+## 🔧 Installation
+
+### Basic Setup
+
 ```bash
-source ~/.zshrc
-./init-project.sh
-```
+# Install dependencies
+npm install
 
-This will:
-- Create the project structure
-- Install all npm dependencies
-- Set up TypeScript configuration
-- Initialize Git repository
+# Copy environment variables
+cp .env.example .env
 
-### 3. Configure API Keys (5 minutes)
-1. Copy the environment file:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edit `.env` and add your API keys:
-   - Get CoinDCX API keys from: https://coindcx.com/api-dashboard
-   - Get ZebPay API keys from: https://www.zebpay.com/api
-
-### 4. Set Up Database (2 minutes)
-```bash
-npm run db:setup
-```
-
-### 5. Start Development (Week 1, Day 1)
-```bash
+# Start the development server
 npm run dev
 ```
 
-## 📁 Project Structure Created
+### Full Setup (with Database)
+
+```bash
+# Install dependencies
+npm install
+
+# Setup PostgreSQL database
+npm run db:setup
+
+# Configure your .env file with API keys
+nano .env
+
+# Start the application
+npm run dev
+```
+
+## 🔑 Configuration
+
+Create a `.env` file with your API credentials:
+
+```env
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=arbitrage_bot
+DB_USER=postgres
+DB_PASSWORD=your_password
+
+# Exchange APIs (Optional)
+COINDCX_API_KEY=your_key
+COINDCX_API_SECRET=your_secret
+
+ZEBPAY_API_KEY=your_key
+ZEBPAY_API_SECRET=your_secret
+
+BINANCE_API_KEY=your_key
+BINANCE_API_SECRET=your_secret
+
+KUCOIN_API_KEY=your_key
+KUCOIN_API_SECRET=your_secret
+KUCOIN_PASSPHRASE=your_passphrase
+
+# Trading Settings
+MIN_PROFIT_THRESHOLD=0.1
+MAX_TRADE_AMOUNT=10000
+ENABLE_AUTO_TRADING=false
+```
+
+## 📊 Usage
+
+### Web Dashboard
+Access the dashboard at http://localhost:3000 to:
+- View real-time prices
+- Monitor arbitrage opportunities
+- Track profit potential
+- Analyze market trends
+
+### API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/prices` | Current prices from all exchanges |
+| `GET /api/opportunities` | Active arbitrage opportunities |
+| `GET /api/system-status` | System health and uptime |
+| `GET /api/metrics` | Performance statistics |
+| `GET /api/historical` | Historical arbitrage data |
+
+### Example API Request
+
+```bash
+curl http://localhost:3000/api/opportunities
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "type": "USDT/USDC Binance",
+      "spread": 0.15,
+      "profitable": true,
+      "buyExchange": "Binance",
+      "sellExchange": "KuCoin",
+      "netProfit": 0.12
+    }
+  ]
+}
+```
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Web Dashboard │────▶│  Express Server │────▶│   PostgreSQL    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                               │
+                               ▼
+                    ┌────────────────────┐
+                    │  Exchange APIs     │
+                    ├────────────────────┤
+                    │ • CoinDCX          │
+                    │ • ZebPay           │
+                    │ • Binance          │
+                    │ • KuCoin           │
+                    │ • CoinSwitch       │
+                    └────────────────────┘
+```
+
+## 📈 How It Works
+
+1. **Price Collection**: The bot connects to multiple exchanges via WebSocket/REST APIs
+2. **Arbitrage Detection**: Continuously analyzes price differences between exchanges
+3. **Profit Calculation**: Factors in trading fees, network fees, and TDS
+4. **Opportunity Alert**: Notifies when profit exceeds minimum threshold
+5. **Risk Management**: Validates opportunities against safety parameters
+
+### Arbitrage Formula
+
+```
+Profit = (Sell Price - Buy Price) - Trading Fees - Network Fees - TDS
+ROI% = (Profit / Investment) × 100
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test suite
+npm test -- exchanges
+
+# Test with coverage
+npm run test:coverage
+```
+
+## 🐳 Docker Support
+
+```bash
+# Build the image
+docker build -t usdt-arbitrage-bot .
+
+# Run the container
+docker run -p 3000:3000 --env-file .env usdt-arbitrage-bot
+```
+
+## 📚 Project Structure
 
 ```
 usdt-arbitrage-bot/
 ├── src/
-│   ├── index.ts                 # Main application entry
-│   ├── config/
-│   │   ├── database.ts         # Database configuration
-│   │   └── exchanges.ts        # Exchange configs & fee calculations
-│   ├── api/exchanges/
-│   │   ├── coinDCX.ts         # CoinDCX API client
-│   │   └── zebPay.ts          # ZebPay API client
-│   ├── services/priceScanner/
-│   │   └── index.ts           # Price monitoring & arbitrage detection
-│   ├── utils/
-│   │   └── logger.ts          # Logging utility
-│   └── scripts/
-│       └── setupDatabase.ts   # Database initialization
-├── tests/                      # Test files
-├── logs/                       # Application logs
-├── .env.example               # Environment variables template
-├── tsconfig.json              # TypeScript configuration
-├── package.json               # Node.js dependencies
-└── .gitignore                 # Git ignore rules
+│   ├── index.ts              # Main application entry
+│   ├── api/exchanges/        # Exchange integrations
+│   ├── services/             # Core business logic
+│   ├── routes/               # API routes
+│   ├── config/               # Configuration files
+│   └── utils/                # Helper functions
+├── public/                   # Frontend assets
+├── tests/                    # Test files
+├── docs/                     # Documentation
+└── scripts/                  # Utility scripts
 ```
 
-## 🎯 Week 1 Goals
+## 🤝 Contributing
 
-By the end of Week 1, you should have:
-- ✅ Working price monitor
-- ✅ Basic arbitrage detection
-- ✅ Telegram alerts
-- ✅ 99% price data accuracy
-- ✅ <1 second alert latency
-- ✅ 10+ opportunities detected daily
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 💻 Available Commands
+## 📝 License
 
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build TypeScript to JavaScript
-- `npm start` - Run production build
-- `npm test` - Run tests
-- `npm run db:setup` - Initialize database
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🔍 Current Implementation Status
+## ⚠️ Disclaimer
 
-### ✅ Completed (Day 1)
-- Project structure setup
-- TypeScript configuration
-- Database configuration (PostgreSQL)
-- Logger utility
-- Exchange configuration with fee calculations
-- Basic price scanner service
-- CoinDCX API client (with WebSocket support)
-- ZebPay API client (with REST polling)
+This bot is for educational purposes only. Cryptocurrency trading carries significant risks. Always:
+- Test with small amounts first
+- Understand the tax implications in your jurisdiction
+- Never invest more than you can afford to lose
+- Verify all transactions before execution
 
-### 📝 Next Tasks (Day 2-4)
-- Complete WebSocket integration testing
-- Add error handling and retry logic
-- Implement rate limiting
-- Add unit tests
-- Create Telegram bot integration
+## 🙏 Acknowledgments
 
-## ⚠️ Important Notes
-
-1. **API Keys**: Never commit your `.env` file with real API keys
-2. **Testing**: Always test with small amounts first
-3. **Fees**: The system includes 1% TDS calculation for Indian exchanges
-4. **Safety**: Manual trading is implemented in Week 2, automation in Week 3
-
-## 🆘 Troubleshooting
-
-If you encounter issues:
-
-1. **Node.js not found**: Make sure to run `source ~/.zshrc` after setup
-2. **PostgreSQL connection error**: Check if PostgreSQL is running with `brew services list`
-3. **TypeScript errors**: Run `npm install` again to ensure all dependencies are installed
+- Exchange APIs documentation
+- Node.js and TypeScript communities
+- Open source contributors
 
 ## 📞 Support
 
-For questions about the implementation, refer to:
-- The detailed project instructions in `usdt_arbitrage_instructions.md`
-- Exchange API documentation
-- TypeScript/Node.js documentation
+- 📧 Email: your-email@example.com
+- 💬 Telegram: @your-telegram
+- 🐛 Issues: [GitHub Issues](https://github.com/srijanarya/usdt-arbitrage-bot/issues)
 
-Ready to start? Run `./setup.sh` now! 🚀
+---
 
-## 🎯 **QUICK START (No API Keys Required)**
-
-For immediate testing without any setup:
-
-```bash
-# Start the simple monitor (works immediately)
-./start-simple.sh
-```
-
-This will start a working arbitrage monitor at `http://localhost:3000` using public APIs only.
-
-## 🔧 **Full Setup (With API Keys)**
-
-For complete functionality with real trading capabilities:
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Copy environment file
-cp .env.example .env
-
-# 3. Edit .env with your API keys (optional)
-
-# 4. Start full system
-npm run dev
-```
-
-## ✅ **What's Working:**
-
-- ✅ Real-time price monitoring from Binance, CoinGecko
-- ✅ Arbitrage opportunity detection
-- ✅ Web dashboard with live updates
-- ✅ REST API endpoints
-- ✅ USDT/USDC spread analysis
-- ✅ Fee calculations (0.1% + 1% TDS for Indian exchanges)
-- ✅ Multi-exchange support (CoinDCX, ZebPay, Binance, KuCoin, CoinSwitch)
-
->>>>>>> 57ec8c0 (Initial commit: Automated project setup)
+Made with ❤️ by [Srijan Arya](https://github.com/srijanarya)

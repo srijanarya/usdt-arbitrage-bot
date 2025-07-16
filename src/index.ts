@@ -10,6 +10,7 @@ import path from 'path';
 // import { PriceScanner } from './services/priceScanner';
 import { MultiExchangeMonitor } from './monitorMultiExchange';
 import apiRoutes, { setMonitor, addHistoricalDataPoint } from './routes/api';
+import { telegramNotifier } from './services/telegram';
 
 // Load environment variables
 dotenv.config();
@@ -76,6 +77,20 @@ monitor.on('arbitrageOpportunity', (data) => {
     profitPercentage: data.netProfit
   };
   addHistoricalDataPoint(opportunities, metrics);
+  
+  // Send Telegram notification for profitable opportunities
+  if (data.netProfit > 0.1 && telegramNotifier.isEnabled()) {
+    telegramNotifier.sendArbitrageAlert({
+      type: data.strategy || 'USDT/USDC',
+      buyExchange: data.route?.split(' → ')[0] || 'Exchange A',
+      sellExchange: data.route?.split(' → ')[1] || 'Exchange B',
+      pair: 'USDT/USDC',
+      buyPrice: 1 - (data.netProfit / 100),
+      sellPrice: 1,
+      netProfit: data.netProfit,
+      timestamp: new Date()
+    });
+  }
 });
 
 monitor.on('error', (error) => {
@@ -88,6 +103,15 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Dashboard: http://localhost:${PORT}`);
   console.log(`API Status: http://localhost:${PORT}/api/system-status`);
+  
+  // Test Telegram connection if enabled
+  if (process.env.TELEGRAM_ENABLED === 'true') {
+    telegramNotifier.testConnection().then(connected => {
+      if (connected) {
+        console.log('✅ Telegram notifications enabled');
+      }
+    });
+  }
   
   // Start monitoring after server is listening
   monitor.start().catch(console.error);
