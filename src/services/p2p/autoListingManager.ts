@@ -299,8 +299,8 @@ export class AutoListingManager extends EventEmitter {
         price,
         paymentMethod: 'UPI',
         paymentDetails: {
-          upiId: process.env.UPI_ID || 'your-upi@bank',
-          accountHolderName: 'Your Name'
+          upiId: process.env.UPI_ID || 'srijanaryay@okaxis',
+          accountHolderName: process.env.UPI_HOLDER_NAME || 'Srijan Arya'
         },
         autoRelease: true
       });

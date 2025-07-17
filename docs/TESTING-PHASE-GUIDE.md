@@ -47,7 +47,8 @@ Open `WALLET-TRANSFER-MONITOR.html` to track the process step-by-step.
 
 Currently using:
 ```
-UPI ID: ultrathink@paytm
+UPI ID: srijanaryay@okaxis
+Holder Name: Srijan Arya
 ```
 
 This is configured in the system and will be used for:
