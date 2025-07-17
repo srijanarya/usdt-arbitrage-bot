@@ -19,7 +19,16 @@
     "test:fetcher": "tsx src/scripts/testLiveRateFetcher.ts",
     "test:websocket": "tsx src/scripts/testWebSocketReconnection.ts",
     "bot": "tsx src/runComprehensiveBot.ts",
-    "bot:dashboard": "open BOT-CONTROL-CENTER.html"
+    "bot:dashboard": "open BOT-CONTROL-CENTER.html",
+    "p2p": "tsx src/runP2PAutomation.ts",
+    "p2p:dashboard": "open P2P-AUTOMATION-DASHBOARD.html",
+    "setup:gmail": "tsx src/scripts/setupGmailAuth.ts",
+    "setup:gmail-simple": "tsx src/scripts/simpleGmailSetup.ts",
+    "fetch:wallets": "tsx src/scripts/fetchWalletAddresses.ts",
+    "server": "tsx src/server.ts",
+    "api": "tsx src/api/p2pApiServer.ts",
+    "lint": "echo 'No linter configured'",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -36,7 +45,10 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "googleapis": "^140.0.1",
+    "google-auth-library": "^9.14.1",
+    "twilio": "^5.3.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
