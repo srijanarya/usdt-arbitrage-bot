@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Testing Dashboard | Aggressive Trading Mode</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(45deg, #f7931a, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(76, 175, 80, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #333;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .metric-change {
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .positive {
+            color: #4caf50;
+        }
+
+        .negative {
+            color: #f44336;
+        }
+
+        .orders-section {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .orders-table th {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .orders-table td {
+            padding: 12px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .order-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .status-completed {
+            background: rgba(33, 150, 243, 0.2);
+            color: #2196f3;
+        }
+
+        .action-button {
+            background: #f7931a;
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-button:hover {
+            background: #ffa500;
+        }
+
+        .performance-chart {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #333;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
+        .strategy-panel {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 1px solid #444;
+        }
+
+        .strategy-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .control-group input {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: #333;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #4caf50;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(24px);
+        }
+
+        .alert-banner {
+            background: linear-gradient(135deg, #ff6b6b, #ff4757);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-icon {
+            font-size: 24px;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .alert-description {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>P2P Testing Dashboard</h1>
+            <p style="color: #666; margin-top: 8px;">Aggressive Trading Mode - Maximum Volume Strategy</p>
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span>LIVE TESTING</span>
+            </div>
+        </div>
+
+        <div class="alert-banner">
+            <div class="alert-icon">🚀</div>
+            <div class="alert-content">
+                <div class="alert-title">Aggressive Mode Active</div>
+                <div class="alert-description">Testing phase: Accepting minimum 0.3% profit for maximum transaction volume</div>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total Volume</div>
+                <div class="metric-value">46 USDT</div>
+                <div class="metric-change positive">+300% today</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Active Orders</div>
+                <div class="metric-value">5</div>
+                <div class="metric-change">Max: 10</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Avg Profit</div>
+                <div class="metric-value positive">5.69%</div>
+                <div class="metric-change">Min: 0.3%</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value">0%</div>
+                <div class="metric-change">0/5 completed</div>
+            </div>
+        </div>
+
+        <div class="strategy-panel">
+            <h2>Trading Strategy Controls</h2>
+            <div class="strategy-controls">
+                <div class="control-group">
+                    <label>Aggressive Mode</label>
+                    <div class="toggle-switch active" onclick="toggleMode(this)"></div>
+                </div>
+                <div class="control-group">
+                    <label>Min Profit %</label>
+                    <input type="number" value="0.3" step="0.1" id="minProfit">
+                </div>
+                <div class="control-group">
+                    <label>Max Orders</label>
+                    <input type="number" value="10" id="maxOrders">
+                </div>
+                <div class="control-group">
+                    <label>Update Interval (s)</label>
+                    <input type="number" value="10" id="updateInterval">
+                </div>
+            </div>
+        </div>
+
+        <div class="orders-section">
+            <div class="section-header">
+                <h2>Active Sell Orders</h2>
+                <button class="action-button" onclick="refreshOrders()">Refresh</button>
+            </div>
+            <table class="orders-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Amount</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                        <th>Profit</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <tr>
+                        <td>binance_1752740031065</td>
+                        <td>11.5 USDT</td>
+                        <td>₹90.50</td>
+                        <td>₹1,040.75</td>
+                        <td class="positive">+1.68%</td>
+                        <td><span class="order-status status-active">Active</span></td>
+                        <td>30m ago</td>
+                        <td><button class="action-button">Update</button></td>
+                    </tr>
+                    <tr>
+                        <td>binance_1752741543639</td>
+                        <td>11.5 USDT</td>
+                        <td>₹94.52</td>
+                        <td>₹1,086.98</td>
+                        <td class="positive">+6.20%</td>
+                        <td><span class="order-status status-active">Active</span></td>
+                        <td>3m ago</td>
+                        <td><button class="action-button">Cancel</button></td>
+                    </tr>
+                    <tr>
+                        <td>binance_1752741553798</td>
+                        <td>11.5 USDT</td>
+                        <td>₹94.52</td>
+                        <td>₹1,086.98</td>
+                        <td class="positive">+6.20%</td>
+                        <td><span class="order-status status-active">Active</span></td>
+                        <td>3m ago</td>
+                        <td><button class="action-button">Cancel</button></td>
+                    </tr>
+                    <tr>
+                        <td>binance_1752741563784</td>
+                        <td>11.5 USDT</td>
+                        <td>₹94.52</td>
+                        <td>₹1,086.98</td>
+                        <td class="positive">+6.20%</td>
+                        <td><span class="order-status status-active">Active</span></td>
+                        <td>3m ago</td>
+                        <td><button class="action-button">Cancel</button></td>
+                    </tr>
+                    <tr>
+                        <td>binance_1752742976850</td>
+                        <td>11.5 USDT</td>
+                        <td>₹94.06</td>
+                        <td>₹1,081.69</td>
+                        <td class="positive">+5.69%</td>
+                        <td><span class="order-status status-pending">Pending</span></td>
+                        <td>Just now</td>
+                        <td><button class="action-button">Track</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="performance-chart">
+            <p>Performance Chart Coming Soon...</p>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        const buyPrice = 89;
+
+        function connectWebSocket() {
+            ws = new WebSocket('ws://localhost:3001/ws');
+            
+            ws.onopen = () => {
+                console.log('Connected to server');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                updateDashboard(data);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        function updateDashboard(data) {
+            // Update metrics based on real-time data
+            if (data.type === 'orderUpdate') {
+                refreshOrders();
+            }
+        }
+
+        function toggleMode(element) {
+            element.classList.toggle('active');
+            const isActive = element.classList.contains('active');
+            
+            // Send update to server
+            fetch('http://localhost:3001/api/strategy/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ aggressiveMode: isActive })
+            });
+        }
+
+        async function refreshOrders() {
+            try {
+                const response = await fetch('http://localhost:3001/api/p2p/orders');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateOrdersTable(data.orders);
+                }
+            } catch (error) {
+                console.error('Failed to refresh orders:', error);
+            }
+        }
+
+        function updateOrdersTable(orders) {
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = orders.map(order => {
+                const profit = ((order.price - buyPrice) / buyPrice * 100).toFixed(2);
+                const timeAgo = getTimeAgo(new Date(order.createdAt));
+                
+                return `
+                    <tr>
+                        <td>${order.id.split('_').slice(0, 2).join('_')}</td>
+                        <td>${order.amount} USDT</td>
+                        <td>₹${order.price.toFixed(2)}</td>
+                        <td>₹${order.expectedAmount.toFixed(2)}</td>
+                        <td class="positive">+${profit}%</td>
+                        <td><span class="order-status status-${getStatusClass(order.status)}">${formatStatus(order.status)}</span></td>
+                        <td>${timeAgo}</td>
+                        <td><button class="action-button" onclick="handleAction('${order.id}')">Action</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'Just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            return `${hours}h ago`;
+        }
+
+        function getStatusClass(status) {
+            if (status === 'waiting_payment') return 'active';
+            if (status === 'pending') return 'pending';
+            if (status === 'completed') return 'completed';
+            return 'pending';
+        }
+
+        function formatStatus(status) {
+            return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function handleAction(orderId) {
+            console.log('Action for order:', orderId);
+            // Implement order actions
+        }
+
+        // Start WebSocket connection
+        // connectWebSocket();
+
+        // Refresh orders every 30 seconds
+        setInterval(refreshOrders, 30000);
+        
+        // Initial load
+        refreshOrders();
+    </script>
+</body>
+</html>

@@ -736,8 +736,22 @@
             log('info', `Manually releasing order: ${orderId}`);
             
             try {
-                const orderIndex = orders.findIndex(o => o.id === orderId);
-                if (orderIndex !== -1) {
+                const response = await fetch(`http://localhost:3001/api/p2p/orders/${orderId}/release`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: 'Manual release from dashboard' })
+                });
+                
+                if (response.ok) {
+                    log('success', `Order ${orderId} released successfully`);
+                    showAlert('success', 'Order released successfully');
+                    refreshData(); // Refresh to show updated status
+                } else {
+                    const error = await response.json();
+                    log('error', `Release failed: ${error.error}`);
+                    showAlert('error', `Release failed: ${error.error}`);
+                }
+            } catch (error) {
                     orders[orderIndex].status = 'completed';
                     stats.activeOrders--;
                     stats.releasesCompleted++;
@@ -763,8 +777,21 @@
             log('info', `Cancelling order: ${orderId}`);
             
             try {
-                const orderIndex = orders.findIndex(o => o.id === orderId);
-                if (orderIndex !== -1) {
+                const response = await fetch(`http://localhost:3001/api/p2p/orders/${orderId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    log('success', `Order ${orderId} cancelled successfully`);
+                    showAlert('success', 'Order cancelled successfully');
+                    refreshData(); // Refresh to show updated status
+                } else {
+                    const error = await response.json();
+                    log('error', `Cancel failed: ${error.error}`);
+                    showAlert('error', `Cancel failed: ${error.error}`);
+                }
+            } catch (error) {
                     orders[orderIndex].status = 'cancelled';
                     stats.activeOrders--;
                     
@@ -802,16 +829,41 @@
         }
 
         async function refreshData() {
-            // Simulate data refresh
-            if (workflowStatus.running) {
-                // Random activity simulation
-                if (Math.random() < 0.1) {
-                    stats.paymentsDetected++;
-                    log('info', `Payment detected via ${Math.random() < 0.5 ? 'Gmail' : 'SMS'}`);
+            try {
+                // Fetch real data from API
+                const ordersResponse = await fetch('http://localhost:3001/api/p2p/orders');
+                if (ordersResponse.ok) {
+                    const ordersData = await ordersResponse.json();
+                    orders = ordersData.orders || [];
+                    stats.activeOrders = orders.length;
+                    
+                    // Update orders display
+                    updateOrdersDisplay();
+                    log('info', `Refreshed: ${orders.length} active orders`);
+                } else {
+                    log('error', 'Failed to fetch orders from API');
                 }
                 
-                if (Math.random() < 0.05) {
-                    stats.verificationsSuccess++;
+                // Fetch system status
+                const statusResponse = await fetch('http://localhost:3001/api/system/status');
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+                    workflowStatus.running = statusData.status?.orchestrator?.running || false;
+                    workflowStatus.autoRelease = statusData.status?.autoRelease?.enabled || false;
+                    
+                    updateStatusDisplay();
+                }
+            } catch (error) {
+                log('error', `API connection failed: ${error.message}`);
+                // Fallback simulation for demo
+                if (workflowStatus.running) {
+                    if (Math.random() < 0.1) {
+                        stats.paymentsDetected++;
+                        log('info', `Payment detected via ${Math.random() < 0.5 ? 'Gmail' : 'SMS'}`);
+                    }
+                    
+                    if (Math.random() < 0.05) {
+                        stats.verificationsSuccess++;
                     log('success', 'Payment verification completed');
                 }
             }

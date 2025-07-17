@@ -47,6 +47,13 @@ export function createP2PApiServer(workflowOrchestrator: P2PWorkflowOrchestrator
                 amount: amount
             });
 
+            if (!order) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Order creation blocked - check trading mode or limits'
+                });
+            }
+
             res.json({
                 success: true,
                 orderId: order.id,
@@ -211,10 +218,14 @@ export function createP2PApiServer(workflowOrchestrator: P2PWorkflowOrchestrator
             }
 
             const status = orchestrator.getSystemStatus();
+            const tradingModes = orchestrator.getTradingModeSummary();
             
             res.json({
                 success: true,
-                status
+                status: {
+                    ...status,
+                    tradingModes
+                }
             });
 
         } catch (error) {
@@ -222,6 +233,216 @@ export function createP2PApiServer(workflowOrchestrator: P2PWorkflowOrchestrator
             res.status(500).json({
                 success: false,
                 error: error.message || 'Failed to get system status'
+            });
+        }
+    });
+
+    // Get pending approvals
+    app.get('/api/trading/approvals', async (req, res) => {
+        try {
+            if (!orchestrator) {
+                return res.status(503).json({ error: 'P2P system not initialized' });
+            }
+
+            const approvals = orchestrator.getPendingApprovals();
+            
+            res.json({
+                success: true,
+                approvals
+            });
+
+        } catch (error) {
+            logger.error('❌ API: Failed to get approvals:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Failed to get approvals'
+            });
+        }
+    });
+
+    // Approve or reject trade
+    app.post('/api/trading/approvals/:approvalId', async (req, res) => {
+        try {
+            const { approvalId } = req.params;
+            const { approved, reason } = req.body;
+
+            if (!orchestrator) {
+                return res.status(503).json({ error: 'P2P system not initialized' });
+            }
+
+            const success = await orchestrator.approveTradeManually(approvalId, approved, reason);
+            
+            res.json({
+                success,
+                message: success ? 'Trade approved' : 'Trade approval failed'
+            });
+
+        } catch (error) {
+            logger.error('❌ API: Failed to process approval:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Failed to process approval'
+            });
+        }
+    });
+
+    // Set exchange trading mode
+    app.post('/api/trading/mode/:exchange', async (req, res) => {
+        try {
+            const { exchange } = req.params;
+            const { mode } = req.body;
+
+            if (!orchestrator) {
+                return res.status(503).json({ error: 'P2P system not initialized' });
+            }
+
+            if (mode === 'fully_automated') {
+                orchestrator.enableFullAutomationForExchange(exchange);
+            } else if (mode === 'semi_assisted') {
+                orchestrator.enableSemiAssistedForExchange(exchange);
+            } else {
+                return res.status(400).json({ error: 'Invalid trading mode' });
+            }
+            
+            res.json({
+                success: true,
+                message: `Trading mode set to ${mode} for ${exchange}`
+            });
+
+        } catch (error) {
+            logger.error('❌ API: Failed to set trading mode:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Failed to set trading mode'
+            });
+        }
+    });
+
+    // Wallet transfer endpoint
+    app.post('/api/wallet/transfer', async (req, res) => {
+        try {
+            const { fromExchange, toExchange, amount, network } = req.body;
+
+            if (!fromExchange || !toExchange || !amount) {
+                return res.status(400).json({ 
+                    error: 'Missing required fields: fromExchange, toExchange, amount' 
+                });
+            }
+
+            // Import wallet transfer service
+            const { walletTransferService } = await import('../services/wallet/walletTransferService');
+
+            const result = await walletTransferService.transferUSDT({
+                fromExchange,
+                toExchange,
+                amount,
+                currency: 'USDT',
+                network: network || 'TRC20'
+            });
+
+            res.json({
+                success: result.success,
+                result
+            });
+
+        } catch (error) {
+            logger.error('❌ API: Wallet transfer failed:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Transfer failed'
+            });
+        }
+    });
+
+    // Get deposit address
+    app.get('/api/wallet/deposit/:exchange/:currency', async (req, res) => {
+        try {
+            const { exchange, currency } = req.params;
+            const { network } = req.query;
+
+            res.json({
+                success: true,
+                message: `Get deposit address for ${currency} on ${exchange}`,
+                info: 'Use the exchange app to get your deposit address',
+                network: network || 'TRC20'
+            });
+
+        } catch (error) {
+            logger.error('❌ API: Failed to get deposit address:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Failed to get deposit address'
+            });
+        }
+    });
+
+    // Auto-listing endpoints
+    app.get('/api/auto-listing/status', async (req, res) => {
+        try {
+            const { autoListingManager } = await import('../services/p2p/autoListingManager');
+            const status = autoListingManager.getStatus();
+            res.json({
+                success: true,
+                ...status
+            });
+        } catch (error) {
+            logger.error('❌ API: Failed to get auto-listing status:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Failed to get status'
+            });
+        }
+    });
+
+    app.post('/api/auto-listing/start', async (req, res) => {
+        try {
+            const { autoListingManager } = await import('../services/p2p/autoListingManager');
+            await autoListingManager.start();
+            res.json({
+                success: true,
+                message: 'Auto-listing started'
+            });
+        } catch (error) {
+            logger.error('❌ API: Failed to start auto-listing:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Failed to start auto-listing'
+            });
+        }
+    });
+
+    app.post('/api/auto-listing/stop', async (req, res) => {
+        try {
+            const { autoListingManager } = await import('../services/p2p/autoListingManager');
+            autoListingManager.stop();
+            res.json({
+                success: true,
+                message: 'Auto-listing stopped'
+            });
+        } catch (error) {
+            logger.error('❌ API: Failed to stop auto-listing:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Failed to stop auto-listing'
+            });
+        }
+    });
+
+    app.post('/api/auto-listing/config', async (req, res) => {
+        try {
+            const { autoListingManager } = await import('../services/p2p/autoListingManager');
+            const config = req.body;
+            autoListingManager.updateConfig(config);
+            res.json({
+                success: true,
+                message: 'Configuration updated',
+                config: autoListingManager.getStatus().config
+            });
+        } catch (error) {
+            logger.error('❌ API: Failed to update config:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Failed to update configuration'
             });
         }
     });

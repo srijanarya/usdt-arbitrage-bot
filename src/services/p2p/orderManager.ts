@@ -121,8 +121,8 @@ export class P2POrderManager extends EventEmitter {
     // Note: Binance P2P API is limited and may require special access
     // This is a simplified implementation
     try {
-      const axios = require('axios');
-      const crypto = require('crypto');
+      const axios = (await import('axios')).default;
+      const crypto = await import('crypto');
       
       const timestamp = Date.now();
       const params = {
@@ -153,7 +153,12 @@ export class P2POrderManager extends EventEmitter {
         }
       });
 
-      return { tradeId: response.data.data.adNo || `binance_${timestamp}` };
+      // Handle different possible response structures
+      const tradeId = response.data?.data?.adNo || 
+                     response.data?.adNo || 
+                     response.data?.orderId || 
+                     `binance_${timestamp}`;
+      return { tradeId };
     } catch (error) {
       logger.error('Binance P2P order creation failed:', error);
       // Fallback: simulate order creation for development

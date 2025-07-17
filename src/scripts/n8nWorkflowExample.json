@@ -1,0 +1,201 @@
+{
+  "name": "USDT Auto-Buy Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Check Every 5 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.binance.com/api/v3/ticker/price?symbol=USDTINR",
+        "options": {}
+      },
+      "id": "binance-price-check",
+      "name": "Get USDT Price",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "price-condition",
+              "leftValue": "={{ $json.price }}",
+              "rightValue": "88.5",
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "price-filter",
+      "name": "If Price <= Target",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/p2p/execute",
+        "method": "POST",
+        "body": {
+          "exchange": "binance",
+          "amount": 10,
+          "price": "={{ $json.price }}",
+          "type": "buy",
+          "paymentMethod": "UPI"
+        },
+        "options": {
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        }
+      },
+      "id": "execute-buy",
+      "name": "Execute Buy Order",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "message": "=USDT Auto-Buy Alert!\n\nPrice: ₹{{ $json.price }}\nAmount: 10 USDT\nTotal: ₹{{ $json.price * 10 }}\n\nOrder ID: {{ $json.orderId }}",
+        "additionalFields": {
+          "chatId": "YOUR_TELEGRAM_CHAT_ID"
+        }
+      },
+      "id": "telegram-notify",
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr",
+        "options": {}
+      },
+      "id": "coingecko-backup",
+      "name": "CoinGecko Price (Backup)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 450]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex",
+        "options": {}
+      },
+      "id": "merge-prices",
+      "name": "Merge Price Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [650, 400]
+    }
+  ],
+  "connections": {
+    "schedule-trigger": {
+      "main": [
+        [
+          {
+            "node": "binance-price-check",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "coingecko-backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "binance-price-check": {
+      "main": [
+        [
+          {
+            "node": "merge-prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "coingecko-backup": {
+      "main": [
+        [
+          {
+            "node": "merge-prices",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "merge-prices": {
+      "main": [
+        [
+          {
+            "node": "price-filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "price-filter": {
+      "main": [
+        [
+          {
+            "node": "execute-buy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "execute-buy": {
+      "main": [
+        [
+          {
+            "node": "telegram-notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateId": "usdt-auto-buy",
+    "description": "Monitors USDT price and automatically executes buy orders when price drops below target"
+  }
+}

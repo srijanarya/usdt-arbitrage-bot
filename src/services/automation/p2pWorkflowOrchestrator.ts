@@ -4,6 +4,7 @@ import { PaymentVerifier } from '../payment/paymentVerifier';
 import { GmailPaymentMonitor } from '../payment/gmailMonitor';
 import { SmsPaymentMonitor } from '../payment/smsMonitor';
 import { AutoReleaseSystem } from './autoReleaseSystem';
+import { TradingModeManager, TradingMode } from './tradingModeManager';
 import { logger } from '../../utils/logger';
 
 interface WorkflowConfig {
@@ -56,6 +57,7 @@ export class P2PWorkflowOrchestrator extends EventEmitter {
   private gmailMonitor: GmailPaymentMonitor;
   private smsMonitor: SmsPaymentMonitor;
   private autoReleaseSystem: AutoReleaseSystem;
+  private tradingModeManager: TradingModeManager;
   private config: WorkflowConfig;
   private isRunning: boolean = false;
   private activeWorkflows: Map<string, any> = new Map();
@@ -96,6 +98,9 @@ export class P2PWorkflowOrchestrator extends EventEmitter {
       this.smsMonitor,
       this.config.automation
     );
+
+    // Initialize trading mode manager
+    this.tradingModeManager = new TradingModeManager();
 
     this.setupEventListeners();
   }
@@ -155,6 +160,27 @@ export class P2PWorkflowOrchestrator extends EventEmitter {
     this.paymentVerifier.on('paymentVerified', (verification: any) => {
       logger.info(`✓ Payment verified for order: ${verification.orderId} (confidence: ${verification.confidence})`);
       this.emit('paymentVerified', verification);
+    });
+
+    // Trading Mode Manager Events
+    this.tradingModeManager.on('approvalRequested', (approval: any) => {
+      logger.info(`🤔 Manual approval requested for ${approval.exchange}: ${approval.id}`);
+      this.emit('manualApprovalRequested', approval);
+    });
+
+    this.tradingModeManager.on('tradeApproved', (data: any) => {
+      logger.info(`✅ Trade approved: ${data.approval.id}`);
+      this.executeApprovedTrade(data.approval);
+    });
+
+    this.tradingModeManager.on('tradeRejected', (data: any) => {
+      logger.info(`❌ Trade rejected: ${data.approval.id} - ${data.reason}`);
+      this.emit('tradeRejected', data);
+    });
+
+    this.tradingModeManager.on('approvalExpired', (approval: any) => {
+      logger.warn(`⏰ Trade approval expired: ${approval.id}`);
+      this.emit('approvalExpired', approval);
     });
 
     // Error handling
@@ -265,9 +291,29 @@ export class P2PWorkflowOrchestrator extends EventEmitter {
     }
   }
 
-  async createArbitrageOrder(opportunity: OpportunityData): Promise<P2POrder> {
+  async createArbitrageOrder(opportunity: OpportunityData): Promise<P2POrder | null> {
     if (!this.isRunning) {
       throw new Error('Workflow orchestrator is not running');
+    }
+
+    // Check trading mode for this exchange
+    const tradingDecision = await this.tradingModeManager.shouldExecuteTrade(
+      opportunity.sellExchange, 
+      opportunity
+    );
+
+    if (!tradingDecision.execute) {
+      logger.info(`🚫 Trade blocked for ${opportunity.sellExchange}: ${tradingDecision.reason}`);
+      
+      if (tradingDecision.approvalId) {
+        this.emit('approvalRequested', {
+          approvalId: tradingDecision.approvalId,
+          exchange: opportunity.sellExchange,
+          opportunity
+        });
+      }
+      
+      return null;
     }
 
     const workflowId = `workflow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -279,40 +325,59 @@ export class P2PWorkflowOrchestrator extends EventEmitter {
         profit: `${opportunity.profitPercent.toFixed(2)}%`
       });
 
-      // Create P2P sell order
-      const order = await this.orderManager.createSellOrder({
-        exchange: opportunity.sellExchange,
-        amount: opportunity.amount,
-        price: opportunity.sellPrice,
-        paymentMethod: this.config.trading.defaultPaymentMethod,
-        paymentDetails: {
-          // Payment details from config or user setup
-          upiId: process.env.UPI_ID,
-          accountNumber: process.env.BANK_ACCOUNT,
-          bankName: process.env.BANK_NAME,
-          ifscCode: process.env.IFSC_CODE,
-          accountHolderName: process.env.ACCOUNT_HOLDER_NAME
-        },
-        autoRelease: this.config.automation.enabled
-      });
-
-      // Track the workflow
-      this.activeWorkflows.set(workflowId, {
-        orderId: order.id,
-        opportunity,
-        createdAt: new Date(),
-        status: 'pending'
-      });
-
-      logger.info(`📝 Arbitrage order created: ${order.id}`);
-      this.emit('arbitrageOrderCreated', { order, opportunity, workflowId });
-
-      return order;
+      return await this.executeTradeOrder(opportunity, workflowId);
 
     } catch (error) {
       logger.error(`💥 Failed to create arbitrage order:`, error);
       this.emit('arbitrageOrderError', { opportunity, error: error.message, workflowId });
       throw error;
+    }
+  }
+
+  private async executeTradeOrder(opportunity: OpportunityData, workflowId: string): Promise<P2POrder> {
+    // Get exchange config to determine automation level
+    const exchangeConfig = this.tradingModeManager.getExchangeConfig(opportunity.sellExchange);
+    
+    // Create P2P sell order
+    const order = await this.orderManager.createSellOrder({
+      exchange: opportunity.sellExchange,
+      amount: opportunity.amount,
+      price: opportunity.sellPrice,
+      paymentMethod: this.config.trading.defaultPaymentMethod,
+      paymentDetails: {
+        // Payment details from config or user setup
+        upiId: process.env.UPI_ID,
+        accountNumber: process.env.BANK_ACCOUNT,
+        bankName: process.env.BANK_NAME,
+        ifscCode: process.env.IFSC_CODE,
+        accountHolderName: process.env.ACCOUNT_HOLDER_NAME
+      },
+      autoRelease: exchangeConfig?.autoReleaseEnabled || this.config.automation.enabled
+    });
+
+    // Track the workflow
+    this.activeWorkflows.set(workflowId, {
+      orderId: order.id,
+      opportunity,
+      createdAt: new Date(),
+      status: 'pending'
+    });
+
+    logger.info(`📝 Arbitrage order created: ${order.id}`);
+    this.emit('arbitrageOrderCreated', { order, opportunity, workflowId });
+
+    return order;
+  }
+
+  private async executeApprovedTrade(approval: any): Promise<void> {
+    try {
+      logger.info(`🚀 Executing approved trade: ${approval.id}`);
+      const order = await this.executeTradeOrder(approval.opportunity, `approved_${approval.id}`);
+      logger.info(`✅ Approved trade executed: ${order.id}`);
+      this.emit('approvedTradeExecuted', { approval, order });
+    } catch (error) {
+      logger.error(`💥 Failed to execute approved trade:`, error);
+      this.emit('approvedTradeError', { approval, error: error.message });
     }
   }
 
@@ -466,6 +531,43 @@ export class P2PWorkflowOrchestrator extends EventEmitter {
 
   getConfig() {
     return { ...this.config };
+  }
+
+  // Trading Mode Management Methods
+  getTradingModeManager(): TradingModeManager {
+    return this.tradingModeManager;
+  }
+
+  async approveTradeManually(approvalId: string, approved: boolean, reason?: string): Promise<boolean> {
+    return await this.tradingModeManager.approveTradeManually(approvalId, approved, reason);
+  }
+
+  getPendingApprovals() {
+    return this.tradingModeManager.getPendingApprovals();
+  }
+
+  enableFullAutomationForExchange(exchange: string) {
+    this.tradingModeManager.enableFullAutomationForExchange(exchange);
+    logger.info(`🤖 Full automation enabled for ${exchange}`);
+  }
+
+  enableSemiAssistedForExchange(exchange: string) {
+    this.tradingModeManager.enableSemiAssistedForExchange(exchange);
+    logger.info(`🤝 Semi-assisted mode enabled for ${exchange}`);
+  }
+
+  pauseAllAutomation() {
+    this.tradingModeManager.pauseAllAutomation();
+    this.emit('automationPaused');
+  }
+
+  resumeAutomation() {
+    this.tradingModeManager.resumeAutomation();
+    this.emit('automationResumed');
+  }
+
+  getTradingModeSummary() {
+    return this.tradingModeManager.getSystemSummary();
   }
 
   // Testing and debugging methods
