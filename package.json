@@ -51,7 +51,8 @@
     "check-balance": "tsx src/scripts/checkActualBalance.ts",
     "build-rating": "tsx src/scripts/buildSellerRating.ts",
     "realtime-server": "tsx src/api/realtimeServer.ts",
-    "mobile": "tsx src/scripts/startMobileServer.ts"
+    "mobile": "tsx src/scripts/startMobileServer.ts",
+    "check-system": "tsx src/scripts/checkSystemReadiness.ts"
   },
   "keywords": [],
   "author": "",

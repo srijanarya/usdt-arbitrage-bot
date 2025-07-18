@@ -78,6 +78,13 @@ export class AutoListingManager extends EventEmitter {
     logger.info('🚀 Starting auto-listing manager');
     this.isRunning = true;
 
+    // Initialize exchange configuration
+    p2pOrderManager.addExchangeConfig({
+      name: 'binance',
+      apiKey: process.env.BINANCE_API_KEY || '',
+      apiSecret: process.env.BINANCE_API_SECRET || ''
+    });
+
     // Initial balance check
     await this.updateBalance();
 
