@@ -15,6 +15,14 @@ import { telegramNotifier } from './services/telegram';
 // Load environment variables
 dotenv.config();
 
+// Validate environment
+import { validateEnvironment } from './config/validateEnv.js';
+const envValidation = validateEnvironment();
+if (!envValidation.isValid) {
+  console.error('Environment validation failed:', envValidation.errors);
+  process.exit(1);
+}
+
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
