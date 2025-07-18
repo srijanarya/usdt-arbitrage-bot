@@ -335,4 +335,7 @@ export class P2POrderManager extends EventEmitter {
   }
 }
 
+// Create singleton instance
+export const p2pOrderManager = new P2POrderManager();
+
 export type { P2POrder, ExchangeConfig };

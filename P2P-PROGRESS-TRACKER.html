@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Express Journey Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 2px solid #4CAF50;
+        }
+        
+        .journey-progress {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .phase-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .phase {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 0 5px;
+            position: relative;
+        }
+        
+        .phase.active {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .phase.completed {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .phase.upcoming {
+            background: #333;
+            color: #888;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .target-progress {
+            background: #333;
+            border-radius: 10px;
+            height: 20px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #2196F3);
+            transition: width 0.3s ease;
+        }
+        
+        .daily-actions {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .action-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #0a0a0a;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        
+        .action-checkbox {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+        }
+        
+        .action-item.completed {
+            background: #1a3a1a;
+            border-color: #4CAF50;
+        }
+        
+        .milestones {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .milestone {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+        }
+        
+        .milestone.achieved {
+            background: #1a3a1a;
+            border-color: #4CAF50;
+        }
+        
+        .milestone-date {
+            font-family: monospace;
+            color: #888;
+        }
+        
+        .trade-log {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .trade-entry {
+            display: grid;
+            grid-template-columns: auto 1fr 100px 100px 100px;
+            gap: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #0a0a0a;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        
+        .profit-positive {
+            color: #4CAF50;
+        }
+        
+        .profit-negative {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 P2P Express Merchant Journey</h1>
+            <p>Your 6-9 Month Roadmap to Gold Tier Status</p>
+            <p style="margin-top: 10px; color: #4CAF50; font-size: 1.1em;">
+                Started: <span id="startDate">January 17, 2025</span> | 
+                Target: <span id="targetDate">October 17, 2025</span>
+            </p>
+        </div>
+        
+        <div class="journey-progress">
+            <h3 style="margin-bottom: 20px;">📊 Current Phase</h3>
+            <div class="phase-indicator">
+                <div class="phase active">
+                    <div>Phase 1</div>
+                    <div style="font-size: 0.8em;">Foundation</div>
+                </div>
+                <div class="phase upcoming">
+                    <div>Phase 2</div>
+                    <div style="font-size: 0.8em;">Regular Trading</div>
+                </div>
+                <div class="phase upcoming">
+                    <div>Phase 3</div>
+                    <div style="font-size: 0.8em;">Merchant App</div>
+                </div>
+                <div class="phase upcoming">
+                    <div>Phase 4</div>
+                    <div style="font-size: 0.8em;">Bronze Tier</div>
+                </div>
+                <div class="phase upcoming">
+                    <div>Phase 5</div>
+                    <div style="font-size: 0.8em;">Silver Tier</div>
+                </div>
+                <div class="phase upcoming">
+                    <div>Phase 6</div>
+                    <div style="font-size: 0.8em;">Gold Tier</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalTrades">0</div>
+                <div class="stat-label">Total Trades</div>
+                <div class="target-progress">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+                <div style="margin-top: 5px; font-size: 0.8em; color: #888;">Target: 200</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value" id="currentCapital">₹1,029</div>
+                <div class="stat-label">Trading Capital</div>
+                <div class="target-progress">
+                    <div class="progress-bar" style="width: 0.2%"></div>
+                </div>
+                <div style="margin-top: 5px; font-size: 0.8em; color: #888;">Target: ₹5,00,000</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value" id="completionRate">0%</div>
+                <div class="stat-label">Completion Rate</div>
+                <div class="target-progress">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+                <div style="margin-top: 5px; font-size: 0.8em; color: #888;">Target: 99%</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value" id="monthlyVolume">₹0</div>
+                <div class="stat-label">Monthly Volume</div>
+                <div class="target-progress">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+                <div style="margin-top: 5px; font-size: 0.8em; color: #888;">Target: ₹50L</div>
+            </div>
+        </div>
+        
+        <div class="daily-actions">
+            <h3 style="margin-bottom: 20px;">📋 Today's Actions</h3>
+            <div class="action-item">
+                <input type="checkbox" class="action-checkbox" id="action1">
+                <label for="action1">Create first P2P sell order (11.5 USDT @ ₹89.45)</label>
+            </div>
+            <div class="action-item">
+                <input type="checkbox" class="action-checkbox" id="action2">
+                <label for="action2">Set up mobile dashboard for quick monitoring</label>
+            </div>
+            <div class="action-item">
+                <input type="checkbox" class="action-checkbox" id="action3">
+                <label for="action3">Document first trade in progress tracker</label>
+            </div>
+            <div class="action-item">
+                <input type="checkbox" class="action-checkbox" id="action4">
+                <label for="action4">Research top 5 merchants' pricing strategies</label>
+            </div>
+            <div class="action-item">
+                <input type="checkbox" class="action-checkbox" id="action5">
+                <label for="action5">Set up business savings account</label>
+            </div>
+        </div>
+        
+        <div class="milestones">
+            <h3 style="margin-bottom: 20px;">🎯 Key Milestones</h3>
+            <div class="milestone">
+                <div>
+                    <strong>Week 1</strong>: Complete 10 trades, build initial reputation
+                </div>
+                <div class="milestone-date">Jan 24, 2025</div>
+            </div>
+            <div class="milestone">
+                <div>
+                    <strong>Month 1</strong>: 50 trades, ₹10,000 capital
+                </div>
+                <div class="milestone-date">Feb 17, 2025</div>
+            </div>
+            <div class="milestone">
+                <div>
+                    <strong>Month 2</strong>: 200 trades, ₹50,000 capital
+                </div>
+                <div class="milestone-date">Mar 17, 2025</div>
+            </div>
+            <div class="milestone">
+                <div>
+                    <strong>Month 3</strong>: Merchant application, ₹1,00,000 capital
+                </div>
+                <div class="milestone-date">Apr 17, 2025</div>
+            </div>
+            <div class="milestone">
+                <div>
+                    <strong>Month 6</strong>: Silver tier, ₹5,00,000 capital
+                </div>
+                <div class="milestone-date">Jul 17, 2025</div>
+            </div>
+            <div class="milestone">
+                <div>
+                    <strong>Month 9</strong>: Gold tier, Lightning Badge
+                </div>
+                <div class="milestone-date">Oct 17, 2025</div>
+            </div>
+        </div>
+        
+        <div class="trade-log">
+            <h3 style="margin-bottom: 20px;">📈 Trade History</h3>
+            <div class="trade-entry" style="font-weight: bold; background: #2a2a2a;">
+                <div>Date</div>
+                <div>Order Details</div>
+                <div>Amount</div>
+                <div>Price</div>
+                <div>Profit</div>
+            </div>
+            <div id="tradeEntries">
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    No trades yet. Start your journey today!
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize dashboard
+        function updateStats() {
+            // This would connect to your real trading data
+            // For now, manual updates
+        }
+        
+        // Handle action checkboxes
+        document.querySelectorAll('.action-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const actionItem = this.closest('.action-item');
+                if (this.checked) {
+                    actionItem.classList.add('completed');
+                } else {
+                    actionItem.classList.remove('completed');
+                }
+                
+                // Save to localStorage
+                localStorage.setItem(this.id, this.checked);
+            });
+            
+            // Load from localStorage
+            const saved = localStorage.getItem(checkbox.id);
+            if (saved === 'true') {
+                checkbox.checked = true;
+                checkbox.closest('.action-item').classList.add('completed');
+            }
+        });
+        
+        // Add trade function
+        function addTrade(date, details, amount, price, profit) {
+            const container = document.getElementById('tradeEntries');
+            const entry = document.createElement('div');
+            entry.className = 'trade-entry';
+            entry.innerHTML = `
+                <div>${date}</div>
+                <div>${details}</div>
+                <div>₹${amount}</div>
+                <div>₹${price}</div>
+                <div class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">
+                    ${profit >= 0 ? '+' : ''}₹${profit}
+                </div>
+            `;
+            
+            if (container.children.length === 1 && container.children[0].textContent.includes('No trades yet')) {
+                container.innerHTML = '';
+            }
+            
+            container.appendChild(entry);
+        }
+        
+        // Example: Add your first trade when completed
+        // addTrade('Jan 17, 2025', 'Sell 11.5 USDT @ ₹89.45', '1,029', '89.45', '21');
+    </script>
+</body>
+</html>

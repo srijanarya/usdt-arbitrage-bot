@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>P2P Mobile Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 0;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        
+        .header {
+            background: #1a1a1a;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid #333;
+        }
+        
+        .header h1 {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #666;
+        }
+        
+        .status-dot.connected {
+            background: #4CAF50;
+        }
+        
+        .quick-stats {
+            background: #1a1a1a;
+            margin: 10px;
+            padding: 15px;
+            border-radius: 12px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .stat-box {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+        
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .order-card {
+            background: #1a1a1a;
+            margin: 10px;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #333;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .order-card.active {
+            border-color: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .order-id {
+            font-size: 0.9em;
+            color: #888;
+        }
+        
+        .order-status {
+            padding: 5px 10px;
+            background: #FF9800;
+            color: #000;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .order-details {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #222;
+        }
+        
+        .detail-label {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            font-size: 1em;
+        }
+        
+        .amount {
+            color: #4CAF50;
+            font-size: 1.2em;
+        }
+        
+        .price {
+            color: #2196F3;
+        }
+        
+        .timer {
+            color: #FF9800;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+        
+        .quick-actions {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            padding: 15px;
+            border-top: 1px solid #333;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .action-button {
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            color: white;
+        }
+        
+        .action-button.primary {
+            background: #4CAF50;
+        }
+        
+        .action-button.secondary {
+            background: #2196F3;
+        }
+        
+        .action-button.danger {
+            background: #f44336;
+        }
+        
+        .action-button:active {
+            transform: scale(0.95);
+        }
+        
+        .message-template {
+            background: #0a0a0a;
+            margin: 10px;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+        
+        .template-header {
+            font-size: 0.9em;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        
+        .template-text {
+            font-size: 0.95em;
+            line-height: 1.5;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #333;
+            word-wrap: break-word;
+        }
+        
+        .copy-button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background: #333;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+        
+        .copy-button:active {
+            background: #444;
+        }
+        
+        .copy-button.copied {
+            background: #4CAF50;
+        }
+        
+        .no-orders {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        
+        .refresh-button {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #333;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+        
+        .refresh-button:active {
+            transform: scale(0.9);
+        }
+        
+        .info-section {
+            margin: 10px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+        
+        .info-title {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+        
+        .upi-details {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+        
+        @media (max-width: 375px) {
+            .quick-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Add padding at bottom for fixed actions */
+        .content {
+            padding-bottom: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📱 P2P Quick Control</h1>
+        <div class="status-bar">
+            <div class="connection-status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+            <span id="currentTime">--:--:--</span>
+        </div>
+    </div>
+    
+    <button class="refresh-button" onclick="location.reload()">🔄</button>
+    
+    <div class="content">
+        <div class="quick-stats">
+            <div class="stat-box">
+                <div class="stat-value" id="activeOrders">0</div>
+                <div class="stat-label">Active Orders</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="balance">0</div>
+                <div class="stat-label">USDT Balance</div>
+            </div>
+        </div>
+        
+        <div id="ordersContainer">
+            <div class="no-orders">
+                <p>No active orders</p>
+                <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    Create orders from desktop or Binance app
+                </p>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-title">💳 Your Payment Details</div>
+            <div class="upi-details" id="upiDetails">
+                UPI: srijanaryay@okaxis<br>
+                Name: Srijan Arya<br>
+                Bank: Axis Bank
+            </div>
+            <button class="copy-button" onclick="copyUPI()">Copy UPI ID</button>
+        </div>
+        
+        <div class="message-template">
+            <div class="template-header">Quick Message Template</div>
+            <div class="template-text" id="messageTemplate">
+Welcome! 🙏
+Payment: UPI to srijanaryay@okaxis
+Amount: ₹[AMOUNT]
+Please pay exact amount and share screenshot.
+I'll release USDT immediately after verification.
+Thank you! 😊
+            </div>
+            <button class="copy-button" onclick="copyTemplate()">Copy Message</button>
+        </div>
+    </div>
+    
+    <div class="quick-actions">
+        <button class="action-button primary" onclick="openBinance()">
+            📱 Open Binance
+        </button>
+        <button class="action-button secondary" onclick="checkUPI()">
+            💰 Open GPay
+        </button>
+    </div>
+    
+    <!-- Manual Order Control Modal -->
+    <div id="orderModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1000; padding: 20px;">
+        <div style="background: #1a1a1a; border-radius: 12px; padding: 20px; margin-top: 50px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            <h3 style="margin-bottom: 20px; color: #4CAF50;">📝 Manual Order Control</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; color: #888; margin-bottom: 5px;">Amount (USDT)</label>
+                <input type="number" id="orderAmount" value="11.5" step="0.1" style="width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: white; border-radius: 8px; font-size: 1.1em;">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; color: #888; margin-bottom: 5px;">Price (₹)</label>
+                <input type="number" id="orderPrice" value="89.45" step="0.01" style="width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: white; border-radius: 8px; font-size: 1.1em;">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; color: #888; margin-bottom: 5px;">Total (₹)</label>
+                <input type="text" id="orderTotal" readonly style="width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: #4CAF50; border-radius: 8px; font-size: 1.1em; font-weight: bold;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #888; margin-bottom: 5px;">Quick Price Adjust</label>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    <button onclick="adjustPrice(-0.5)" style="padding: 10px; background: #333; border: none; color: white; border-radius: 8px;">-₹0.5</button>
+                    <button onclick="adjustPrice(-0.1)" style="padding: 10px; background: #333; border: none; color: white; border-radius: 8px;">-₹0.1</button>
+                    <button onclick="adjustPrice(0.1)" style="padding: 10px; background: #333; border: none; color: white; border-radius: 8px;">+₹0.1</button>
+                    <button onclick="adjustPrice(0.5)" style="padding: 10px; background: #333; border: none; color: white; border-radius: 8px;">+₹0.5</button>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button onclick="closeModal()" style="padding: 15px; background: #666; border: none; color: white; border-radius: 8px; font-weight: bold;">Cancel</button>
+                <button onclick="createOrder()" style="padding: 15px; background: #4CAF50; border: none; color: white; border-radius: 8px; font-weight: bold;">Create Order</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Floating Action Button -->
+    <button onclick="openOrderModal()" style="position: fixed; bottom: 120px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: #4CAF50; border: none; color: white; font-size: 1.5em; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 99;">➕</button>
+    
+    <script>
+        // Update time
+        function updateTime() {
+            document.getElementById('currentTime').textContent = 
+                new Date().toLocaleTimeString();
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        // Mock data for testing - replace with WebSocket connection
+        function updateDashboard() {
+            // This would connect to your real-time server
+            // For now, showing your active order
+            const mockOrder = {
+                id: 'binance_1752758221343_vzrp3f03w',
+                amount: 11.5,
+                price: 89.45,
+                total: 1028.68,
+                status: 'waiting_payment',
+                expiresIn: 25
+            };
+            
+            document.getElementById('activeOrders').textContent = '1';
+            document.getElementById('balance').textContent = '11.5';
+            
+            document.getElementById('ordersContainer').innerHTML = `
+                <div class="order-card active">
+                    <div class="order-header">
+                        <div class="order-id">Order: ...${mockOrder.id.slice(-10)}</div>
+                        <div class="order-status">Waiting</div>
+                    </div>
+                    <div class="order-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Amount</span>
+                            <span class="detail-value amount">${mockOrder.amount} USDT</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Price</span>
+                            <span class="detail-value price">₹${mockOrder.price}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Total</span>
+                            <span class="detail-value amount">₹${mockOrder.total}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Expires In</span>
+                            <span class="detail-value timer">${mockOrder.expiresIn} min</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Update message template with actual amount
+            document.getElementById('messageTemplate').innerHTML = 
+                document.getElementById('messageTemplate').innerHTML
+                    .replace('[AMOUNT]', mockOrder.total.toFixed(2));
+        }
+        
+        // Copy functions
+        function copyUPI() {
+            navigator.clipboard.writeText('srijanaryay@okaxis').then(() => {
+                event.target.textContent = 'Copied! ✓';
+                event.target.classList.add('copied');
+                setTimeout(() => {
+                    event.target.textContent = 'Copy UPI ID';
+                    event.target.classList.remove('copied');
+                }, 2000);
+            });
+        }
+        
+        function copyTemplate() {
+            const text = document.getElementById('messageTemplate').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                event.target.textContent = 'Copied! ✓';
+                event.target.classList.add('copied');
+                setTimeout(() => {
+                    event.target.textContent = 'Copy Message';
+                    event.target.classList.remove('copied');
+                }, 2000);
+            });
+        }
+        
+        // Quick actions
+        function openBinance() {
+            // Try to open Binance app
+            window.location.href = 'binance://';
+            // Fallback to web
+            setTimeout(() => {
+                window.open('https://p2p.binance.com/en/myads', '_blank');
+            }, 500);
+        }
+        
+        function checkUPI() {
+            // Since you use Google Pay with Axis Bank
+            // Try Google Pay first
+            const upiApps = [
+                'tez://',           // Google Pay (primary)
+                'gpay://',          // Google Pay alternate
+                'com.google.android.apps.nbu.paisa.user://', // Google Pay package
+                'phonepe://',       // PhonePe
+                'paytm://',         // Paytm
+                'bhim://'           // BHIM
+            ];
+            
+            // For iOS/Android web, try direct intent
+            if (/Android/.test(navigator.userAgent)) {
+                // Android intent for Google Pay
+                window.location.href = 'intent://pay#Intent;scheme=tez;package=com.google.android.apps.nbu.paisa.user;end';
+            } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                // iOS Google Pay
+                window.location.href = 'tez://';
+            } else {
+                // Desktop or unknown - try each app
+                let opened = false;
+                for (const app of upiApps) {
+                    try {
+                        window.location.href = app;
+                        opened = true;
+                        break;
+                    } catch (e) {}
+                }
+                
+                if (!opened) {
+                    alert('Open Google Pay to check payments for srijanaryay@okaxis');
+                }
+            }
+        }
+        
+        // Connection status
+        function updateConnectionStatus(connected) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            
+            if (connected) {
+                dot.classList.add('connected');
+                text.textContent = 'Live';
+            } else {
+                dot.classList.remove('connected');
+                text.textContent = 'Offline';
+            }
+        }
+        
+        // Initialize
+        updateDashboard();
+        updateConnectionStatus(false); // Will be true when WebSocket connects
+        
+        // Manual Order Control Functions
+        function openOrderModal() {
+            document.getElementById('orderModal').style.display = 'block';
+            calculateTotal();
+        }
+        
+        function closeModal() {
+            document.getElementById('orderModal').style.display = 'none';
+        }
+        
+        function calculateTotal() {
+            const amount = parseFloat(document.getElementById('orderAmount').value) || 0;
+            const price = parseFloat(document.getElementById('orderPrice').value) || 0;
+            const total = (amount * price).toFixed(2);
+            document.getElementById('orderTotal').value = '₹' + total;
+        }
+        
+        function adjustPrice(change) {
+            const priceInput = document.getElementById('orderPrice');
+            const currentPrice = parseFloat(priceInput.value) || 0;
+            priceInput.value = (currentPrice + change).toFixed(2);
+            calculateTotal();
+        }
+        
+        function createOrder() {
+            const amount = document.getElementById('orderAmount').value;
+            const price = document.getElementById('orderPrice').value;
+            
+            if (confirm(`Create sell order for ${amount} USDT at ₹${price}?`)) {
+                // This would send the order to your backend
+                alert('Order created! Check Binance app.');
+                closeModal();
+                
+                // In real implementation:
+                // fetch('/api/create-order', { method: 'POST', body: JSON.stringify({ amount, price }) })
+            }
+        }
+        
+        // Update total when inputs change
+        document.addEventListener('DOMContentLoaded', () => {
+            const amountInput = document.getElementById('orderAmount');
+            const priceInput = document.getElementById('orderPrice');
+            
+            if (amountInput) amountInput.addEventListener('input', calculateTotal);
+            if (priceInput) priceInput.addEventListener('input', calculateTotal);
+        });
+        
+        // WebSocket connection (when server is running)
+        /*
+        const ws = new WebSocket('ws://192.168.1.11:4001');
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            // Update dashboard with real data
+        };
+        */
+    </script>
+</body>
+</html>

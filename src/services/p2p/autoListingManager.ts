@@ -1,8 +1,8 @@
 import { EventEmitter } from 'events';
 import axios from 'axios';
 import { logger } from '../../utils/logger';
-import { binanceService } from '../exchanges/binanceService';
-import { p2pOrderManager } from './orderManager';
+import { binanceService } from '../exchanges/binanceService.js';
+import { p2pOrderManager } from './orderManager.js';
 import { config } from 'dotenv';
 
 config();

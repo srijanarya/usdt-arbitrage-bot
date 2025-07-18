@@ -47,7 +47,11 @@
     "check-status": "tsx src/scripts/checkCurrentStatus.ts",
     "test-auto": "tsx src/scripts/testAutoListing.ts",
     "check-orders": "tsx src/scripts/checkBinanceOrders.ts",
-    "test-0.5": "tsx src/scripts/testingMode05Percent.ts"
+    "test-0.5": "tsx src/scripts/testingMode05Percent.ts",
+    "check-balance": "tsx src/scripts/checkActualBalance.ts",
+    "build-rating": "tsx src/scripts/buildSellerRating.ts",
+    "realtime-server": "tsx src/api/realtimeServer.ts",
+    "mobile": "tsx src/scripts/startMobileServer.ts"
   },
   "keywords": [],
   "author": "",
@@ -71,6 +75,7 @@
     "mailparser": "^3.7.4",
     "pg": "^8.16.3",
     "playwright": "^1.54.1",
+    "qrcode-terminal": "^0.12.0",
     "twilio": "^5.3.1",
     "ws": "^8.18.3"
   },
