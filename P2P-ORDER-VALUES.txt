@@ -1,0 +1,26 @@
+BINANCE P2P SELL ORDER - COPY THESE VALUES
+==========================================
+
+Price: 94.75
+Amount: 11.54
+Min Order: 500
+Max Order: 11000
+Payment Method: UPI
+Time Limit: 15 minutes
+
+EXPECTED RESULTS:
+- Total INR: ₹1,093.41
+- Your Cost: ₹1,027.06  
+- Profit: ₹66.35 (6.5%)
+
+UPI DETAILS FOR BUYERS:
+- UPI ID: srijanaryay@okaxis
+- Name: SRIJAN INDERJEET ARYA
+- Bank: Axis Bank
+
+AFTER POSTING:
+1. Wait for buyer
+2. Share UPI details in chat
+3. Verify payment in Axis Bank app
+4. Check exact amount: ₹1,093.41
+5. Release USDT only after confirmed

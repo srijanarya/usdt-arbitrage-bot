@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheapest USDT & P2P Arbitrage Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #58a6ff;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .summary-bar {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .summary-item {
+            text-align: center;
+        }
+        
+        .summary-label {
+            color: #8b949e;
+            font-size: 0.9em;
+        }
+        
+        .summary-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .buy-value {
+            color: #f85149;
+        }
+        
+        .sell-value {
+            color: #3fb950;
+        }
+        
+        .profit-value {
+            color: #58a6ff;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .section h2 {
+            color: #58a6ff;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .price-table th {
+            background: #0d1117;
+            padding: 10px;
+            text-align: left;
+            color: #8b949e;
+            font-weight: normal;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        .price-table td {
+            padding: 10px;
+            border-bottom: 1px solid #21262d;
+        }
+        
+        .price-table tr:hover {
+            background: #1f2937;
+        }
+        
+        .best-row {
+            background: #1f2937;
+            border-left: 3px solid #3fb950;
+        }
+        
+        .price {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .buy-price {
+            color: #f85149;
+        }
+        
+        .sell-price {
+            color: #3fb950;
+        }
+        
+        .profit {
+            font-weight: bold;
+        }
+        
+        .profit.positive {
+            color: #3fb950;
+        }
+        
+        .profit.negative {
+            color: #f85149;
+        }
+        
+        .arbitrage-opportunity {
+            background: #3fb9501a;
+            border: 1px solid #3fb950;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .opportunity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .opportunity-title {
+            font-weight: bold;
+            color: #3fb950;
+        }
+        
+        .opportunity-profit {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #3fb950;
+        }
+        
+        .opportunity-details {
+            color: #c9d1d9;
+            font-size: 0.95em;
+        }
+        
+        .action-button {
+            background: #238636;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .action-button:hover {
+            background: #2ea043;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8b949e;
+        }
+        
+        .error {
+            background: #f851491a;
+            border: 1px solid #f85149;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .status {
+            text-align: center;
+            color: #8b949e;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        
+        .rate-change {
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+        
+        .rate-up {
+            color: #3fb950;
+        }
+        
+        .rate-down {
+            color: #f85149;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .updating {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Cheapest USDT & P2P Arbitrage Dashboard</h1>
+        
+        <div class="summary-bar">
+            <div class="summary-item">
+                <div class="summary-label">Cheapest Buy</div>
+                <div class="summary-value buy-value" id="cheapestBuy">-</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Best P2P Sell</div>
+                <div class="summary-value sell-value" id="bestSell">-</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Max Profit/USDT</div>
+                <div class="summary-value profit-value" id="maxProfit">-</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Total for 11.54 USDT</div>
+                <div class="summary-value profit-value" id="totalProfit">-</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Buy Prices Section -->
+            <div class="section">
+                <h2>📈 Cheapest USDT Buy Prices</h2>
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Buy Price</th>
+                            <th>Type</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="buyPrices">
+                        <tr><td colspan="4" class="loading">Loading buy prices...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Sell Prices Section -->
+            <div class="section">
+                <h2>📉 P2P Regular Sell Prices</h2>
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Merchant</th>
+                            <th>Sell Price</th>
+                            <th>Payment</th>
+                            <th>Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sellPrices">
+                        <tr><td colspan="4" class="loading">Loading sell prices...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Arbitrage Opportunities -->
+        <div class="section">
+            <h2>🎯 Arbitrage Opportunities</h2>
+            <div id="opportunities">
+                <div class="loading">Calculating opportunities...</div>
+            </div>
+        </div>
+
+        <div class="status">
+            <span id="status">Initializing...</span> | 
+            Refresh: <span id="countdown">10</span>s | 
+            Last update: <span id="lastUpdate">-</span>
+        </div>
+    </div>
+
+    <script>
+        let buyData = [];
+        let sellData = [];
+        let countdown = 10;
+        let previousPrices = {};
+
+        async function fetchBuyPrices() {
+            const sources = [];
+            
+            // Fetch from exchanges
+            try {
+                const exchanges = [
+                    {
+                        name: 'CoinDCX',
+                        url: 'https://api.coindcx.com/exchange/ticker',
+                        parser: (data) => {
+                            const ticker = data.find(t => t.market === 'USDTINR');
+                            return ticker ? parseFloat(ticker.bid) : null;
+                        }
+                    },
+                    {
+                        name: 'ZebPay',
+                        url: 'https://www.zebapi.com/pro/v1/market/USDT-INR/ticker',
+                        parser: (data) => parseFloat(data.buy)
+                    },
+                    {
+                        name: 'WazirX',
+                        url: 'https://api.wazirx.com/api/v2/tickers/usdtinr',
+                        parser: (data) => parseFloat(data.ticker.buy) || parseFloat(data.ticker.last)
+                    }
+                ];
+
+                for (const exchange of exchanges) {
+                    try {
+                        const response = await fetch(exchange.url);
+                        const data = await response.json();
+                        const price = exchange.parser(data);
+                        
+                        if (price && price > 80 && price < 100) {
+                            sources.push({
+                                source: exchange.name,
+                                price: price,
+                                type: 'Exchange',
+                                details: 'Instant'
+                            });
+                        }
+                    } catch (e) {}
+                }
+            } catch (e) {}
+
+            // Fetch P2P buy prices
+            try {
+                const paymentMethods = ['UPI', 'IMPS', 'Bank Transfer'];
+                
+                for (const method of paymentMethods) {
+                    const response = await fetch('https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            page: 1,
+                            rows: 3,
+                            payTypes: [method],
+                            asset: "USDT",
+                            fiat: "INR",
+                            tradeType: "BUY",
+                            transAmount: 11.54
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data?.data?.[0]) {
+                        const cheapest = data.data[0];
+                        sources.push({
+                            source: `P2P ${method}`,
+                            price: parseFloat(cheapest.adv.price),
+                            type: 'P2P',
+                            details: cheapest.advertiser.nickName
+                        });
+                    }
+                }
+            } catch (e) {}
+
+            return sources.sort((a, b) => a.price - b.price);
+        }
+
+        async function fetchSellPrices() {
+            try {
+                const response = await fetch('https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        page: 1,
+                        rows: 20,
+                        payTypes: [],
+                        asset: "USDT",
+                        fiat: "INR",
+                        tradeType: "SELL",
+                        transAmount: 11.54
+                    })
+                });
+
+                const data = await response.json();
+                if (data?.data) {
+                    return data.data.map(ad => ({
+                        merchant: ad.advertiser.nickName,
+                        price: parseFloat(ad.adv.price),
+                        methods: ad.adv.tradeMethods.map(m => m.identifier).join(', '),
+                        rating: (ad.advertiser.monthFinishRate * 100).toFixed(1) + '%',
+                        trades: ad.advertiser.monthOrderCount,
+                        advertId: ad.adv.advNo
+                    })).filter(s => s.price >= 90); // Only show ₹90+ opportunities
+                }
+            } catch (e) {}
+            
+            return [];
+        }
+
+        function displayBuyPrices() {
+            const tbody = document.getElementById('buyPrices');
+            
+            if (buyData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="error">No data available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = buyData.slice(0, 10).map((item, index) => {
+                const prevPrice = previousPrices[item.source] || item.price;
+                const change = item.price - prevPrice;
+                const changeClass = change > 0 ? 'rate-up' : change < 0 ? 'rate-down' : '';
+                const changeIcon = change > 0 ? '↑' : change < 0 ? '↓' : '';
+                
+                previousPrices[item.source] = item.price;
+                
+                return `
+                    <tr class="${index === 0 ? 'best-row' : ''}">
+                        <td>${item.source}</td>
+                        <td>
+                            <span class="price buy-price">₹${item.price.toFixed(2)}</span>
+                            ${change !== 0 ? `<span class="rate-change ${changeClass}">${changeIcon}</span>` : ''}
+                        </td>
+                        <td>${item.type}</td>
+                        <td>${item.details}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function displaySellPrices() {
+            const tbody = document.getElementById('sellPrices');
+            
+            if (sellData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">No P2P buyers offering ₹90+</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sellData.slice(0, 10).map((item, index) => `
+                <tr class="${index === 0 ? 'best-row' : ''}">
+                    <td>${item.merchant}</td>
+                    <td class="price sell-price">₹${item.price.toFixed(2)}</td>
+                    <td>${item.methods}</td>
+                    <td>${item.rating} (${item.trades})</td>
+                </tr>
+            `).join('');
+        }
+
+        function calculateOpportunities() {
+            const opportunities = [];
+            
+            if (buyData.length > 0 && sellData.length > 0) {
+                const cheapestBuy = buyData[0];
+                
+                sellData.forEach(sell => {
+                    const profit = sell.price - cheapestBuy.price;
+                    if (profit > 0) {
+                        opportunities.push({
+                            buySource: cheapestBuy.source,
+                            buyPrice: cheapestBuy.price,
+                            sellTo: sell.merchant,
+                            sellPrice: sell.price,
+                            profit: profit,
+                            profitPercent: (profit / cheapestBuy.price * 100).toFixed(2),
+                            advertId: sell.advertId
+                        });
+                    }
+                });
+            }
+            
+            return opportunities.sort((a, b) => b.profit - a.profit);
+        }
+
+        function displayOpportunities() {
+            const container = document.getElementById('opportunities');
+            const opportunities = calculateOpportunities();
+            
+            if (opportunities.length === 0) {
+                container.innerHTML = '<div class="error">No profitable opportunities found. All buy prices exceed P2P sell prices.</div>';
+                return;
+            }
+
+            container.innerHTML = opportunities.slice(0, 5).map(opp => `
+                <div class="arbitrage-opportunity">
+                    <div class="opportunity-header">
+                        <div class="opportunity-title">
+                            Buy ${opp.buySource} → Sell to ${opp.sellTo}
+                        </div>
+                        <div class="opportunity-profit">
+                            ₹${opp.profit.toFixed(2)}/USDT
+                        </div>
+                    </div>
+                    <div class="opportunity-details">
+                        Buy at ₹${opp.buyPrice.toFixed(2)} → Sell at ₹${opp.sellPrice.toFixed(2)}<br>
+                        Profit: ${opp.profitPercent}% | Total for 11.54 USDT: ₹${(opp.profit * 11.54).toFixed(2)}
+                    </div>
+                    <button class="action-button" onclick="window.open('https://p2p.binance.com/en/advertiserDetail/${opp.advertId}', '_blank')">
+                        Open Sell Order
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function updateSummary() {
+            if (buyData.length > 0 && sellData.length > 0) {
+                const cheapestBuy = buyData[0];
+                const bestSell = sellData[0];
+                const maxProfit = bestSell ? bestSell.price - cheapestBuy.price : 0;
+                
+                document.getElementById('cheapestBuy').textContent = `₹${cheapestBuy.price.toFixed(2)}`;
+                document.getElementById('bestSell').textContent = bestSell ? `₹${bestSell.price.toFixed(2)}` : '-';
+                document.getElementById('maxProfit').textContent = maxProfit > 0 ? `₹${maxProfit.toFixed(2)}` : '₹0';
+                document.getElementById('totalProfit').textContent = maxProfit > 0 ? `₹${(maxProfit * 11.54).toFixed(2)}` : '₹0';
+            }
+        }
+
+        async function refreshData() {
+            document.getElementById('status').textContent = 'Updating...';
+            document.getElementById('status').classList.add('updating');
+            
+            try {
+                const [newBuyData, newSellData] = await Promise.all([
+                    fetchBuyPrices(),
+                    fetchSellPrices()
+                ]);
+                
+                buyData = newBuyData;
+                sellData = newSellData;
+                
+                displayBuyPrices();
+                displaySellPrices();
+                displayOpportunities();
+                updateSummary();
+                
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+                document.getElementById('status').textContent = 'Updated';
+            } catch (error) {
+                document.getElementById('status').textContent = 'Error updating';
+                console.error('Refresh error:', error);
+            } finally {
+                document.getElementById('status').classList.remove('updating');
+            }
+            
+            countdown = 10;
+        }
+
+        // Countdown timer
+        setInterval(() => {
+            countdown--;
+            document.getElementById('countdown').textContent = countdown;
+            
+            if (countdown <= 0) {
+                refreshData();
+            }
+        }, 1000);
+
+        // Initial load
+        refreshData();
+    </script>
+</body>
+</html>

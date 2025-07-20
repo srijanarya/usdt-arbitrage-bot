@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Exchange USDT Rates - Live Comparison</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #58a6ff;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .subtitle {
+            color: #8b949e;
+            margin-bottom: 30px;
+        }
+        
+        .exchange-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .exchange-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .exchange-card:hover {
+            border-color: #58a6ff;
+            transform: translateY(-2px);
+        }
+        
+        .exchange-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #f0f6fc;
+        }
+        
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #21262d;
+        }
+        
+        .buy-price {
+            color: #3fb950;
+            font-weight: bold;
+        }
+        
+        .sell-price {
+            color: #f85149;
+            font-weight: bold;
+        }
+        
+        .spread {
+            color: #8b949e;
+            font-size: 0.9em;
+        }
+        
+        .profit {
+            color: #58a6ff;
+            font-weight: bold;
+        }
+        
+        .profit.positive {
+            color: #3fb950;
+        }
+        
+        .profit.negative {
+            color: #f85149;
+        }
+        
+        .best-deal {
+            background: #1f2937;
+            border: 2px solid #3fb950;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .best-deal h2 {
+            color: #3fb950;
+            margin-bottom: 15px;
+        }
+        
+        .arbitrage-calc {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .calc-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: #0d1117;
+            border-radius: 4px;
+        }
+        
+        .refresh-info {
+            text-align: center;
+            color: #8b949e;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8b949e;
+        }
+        
+        .error {
+            background: #f851491a;
+            border: 1px solid #f85149;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .offline {
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            .exchange-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Indian Exchange USDT Rates</h1>
+        <p class="subtitle">Real-time comparison of USDT/INR rates across Indian exchanges</p>
+        <p class="subtitle" id="express-rate" style="color: #58a6ff; font-weight: bold;"></p>
+        
+        <div id="best-deal" class="best-deal" style="display: none;">
+            <h2>🎯 Best Arbitrage Opportunity</h2>
+            <div id="best-deal-content"></div>
+        </div>
+        
+        <div id="exchange-grid" class="exchange-grid">
+            <div class="loading">Loading exchange rates...</div>
+        </div>
+        
+        <div id="arbitrage-calc" class="arbitrage-calc" style="display: none;">
+            <h3>💰 Profit Calculator</h3>
+            <div id="calc-content"></div>
+        </div>
+        
+        <div class="refresh-info">
+            Last updated: <span id="last-update">-</span> | Auto-refresh every 30 seconds
+        </div>
+    </div>
+
+    <script>
+        const exchanges = [
+            {
+                name: 'CoinDCX',
+                url: 'https://api.coindcx.com/exchange/ticker',
+                parser: (data) => {
+                    const ticker = data.find(t => t.market === 'USDTINR');
+                    return ticker ? {
+                        buy: parseFloat(ticker.bid),
+                        sell: parseFloat(ticker.ask),
+                        last: parseFloat(ticker.last_price),
+                        volume: parseFloat(ticker.volume)
+                    } : null;
+                }
+            },
+            {
+                name: 'ZebPay',
+                url: 'https://www.zebapi.com/pro/v1/market/USDT-INR/ticker',
+                parser: (data) => ({
+                    buy: parseFloat(data.buy),
+                    sell: parseFloat(data.sell),
+                    last: parseFloat(data.market),
+                    volume: parseFloat(data.volume)
+                })
+            }
+        ];
+
+        let BINANCE_SELL_PRICE = 90.5; // Will be updated dynamically
+
+        async function fetchPrice(exchange) {
+            try {
+                const response = await fetch(exchange.url);
+                const data = await response.json();
+                const parsed = exchange.parser(data);
+                return parsed ? { ...parsed, name: exchange.name, status: 'online' } : null;
+            } catch (error) {
+                console.error(`${exchange.name} error:`, error);
+                return { name: exchange.name, status: 'offline' };
+            }
+        }
+
+        async function fetchBinanceExpressSellRate() {
+            try {
+                const response = await fetch('https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        page: 1,
+                        rows: 1,
+                        payTypes: ["IMPS", "Bank Transfer"],
+                        countries: [],
+                        proMerchantAds: false,
+                        asset: "USDT",
+                        fiat: "INR",
+                        tradeType: "SELL",
+                        merchantCheck: false
+                    })
+                });
+                const data = await response.json();
+                if (data?.data?.[0]) {
+                    BINANCE_SELL_PRICE = parseFloat(data.data[0].adv.price);
+                }
+            } catch (error) {
+                console.error('Error fetching Binance Express rate:', error);
+            }
+        }
+
+        async function fetchAllPrices() {
+            // First update Binance Express sell rate
+            await fetchBinanceExpressSellRate();
+            
+            const promises = exchanges.map(fetchPrice);
+            const results = await Promise.all(promises);
+            return results.filter(r => r !== null);
+        }
+
+        async function displayResults(prices) {
+            const grid = document.getElementById('exchange-grid');
+            grid.innerHTML = '';
+
+            // Add Binance P2P Express actual rates
+            try {
+                // Fetch actual P2P Express rates
+                const p2pResponse = await fetch('https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        page: 1,
+                        rows: 1,
+                        payTypes: ["IMPS", "Bank Transfer"],
+                        countries: [],
+                        proMerchantAds: false,
+                        asset: "USDT",
+                        fiat: "INR",
+                        tradeType: "BUY",
+                        merchantCheck: false
+                    })
+                });
+                const buyData = await p2pResponse.json();
+                const buyRate = buyData?.data?.[0] ? parseFloat(buyData.data[0].adv.price) : BINANCE_SELL_PRICE - 0.5;
+                
+                prices.push({
+                    name: 'Binance P2P Express',
+                    buy: buyRate,
+                    sell: BINANCE_SELL_PRICE,
+                    status: 'online'
+                });
+            } catch (e) {
+                prices.push({
+                    name: 'Binance P2P Express',
+                    buy: BINANCE_SELL_PRICE - 0.5,
+                    sell: BINANCE_SELL_PRICE,
+                    status: 'online'
+                });
+            }
+
+            // Sort by buy price
+            const onlinePrices = prices.filter(p => p.status === 'online');
+            onlinePrices.sort((a, b) => a.buy - b.buy);
+
+            onlinePrices.forEach(price => {
+                const spread = ((price.sell - price.buy) / price.buy * 100).toFixed(2);
+                const profit = ((BINANCE_SELL_PRICE - price.buy) / price.buy * 100).toFixed(2);
+                const profitAmount = (BINANCE_SELL_PRICE - price.buy).toFixed(2);
+
+                const card = document.createElement('div');
+                card.className = `exchange-card ${price.status === 'offline' ? 'offline' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="exchange-name">${price.name}</div>
+                    <div class="price-row">
+                        <span>Buy Rate:</span>
+                        <span class="buy-price">₹${price.buy.toFixed(2)}</span>
+                    </div>
+                    <div class="price-row">
+                        <span>Sell Rate:</span>
+                        <span class="sell-price">₹${price.sell.toFixed(2)}</span>
+                    </div>
+                    <div class="price-row">
+                        <span>Spread:</span>
+                        <span class="spread">${spread}%</span>
+                    </div>
+                    ${price.name !== 'Binance P2P Express' ? `
+                    <div class="price-row">
+                        <span>Profit vs Binance:</span>
+                        <span class="profit ${parseFloat(profit) > 0 ? 'positive' : 'negative'}">
+                            ${profit}% (₹${profitAmount})
+                        </span>
+                    </div>
+                    ` : ''}
+                `;
+                
+                grid.appendChild(card);
+            });
+
+            // Update best deal
+            const bestBuy = onlinePrices.find(p => p.name !== 'Binance P2P');
+            if (bestBuy) {
+                const profit = BINANCE_SELL_PRICE - bestBuy.buy;
+                const profitPercent = (profit / bestBuy.buy * 100).toFixed(2);
+
+                if (parseFloat(profitPercent) > 0) {
+                    document.getElementById('best-deal').style.display = 'block';
+                    document.getElementById('best-deal-content').innerHTML = `
+                        <div style="font-size: 1.1em; line-height: 1.8;">
+                            <div>Buy on <strong>${bestBuy.name}</strong> at <span class="buy-price">₹${bestBuy.buy.toFixed(2)}</span></div>
+                            <div>Sell on <strong>Binance P2P</strong> at <span class="sell-price">₹${BINANCE_SELL_PRICE.toFixed(2)}</span></div>
+                            <div>Profit: <span class="profit positive">₹${profit.toFixed(2)} per USDT (${profitPercent}%)</span></div>
+                        </div>
+                    `;
+
+                    // Update calculator
+                    document.getElementById('arbitrage-calc').style.display = 'block';
+                    const amounts = [100, 500, 1000, 5000, 10000];
+                    const calcContent = amounts.map(amount => {
+                        const totalProfit = profit * amount;
+                        const investment = bestBuy.buy * amount;
+                        return `
+                            <div class="calc-row">
+                                <span>${amount} USDT</span>
+                                <span>Invest ₹${investment.toFixed(0)} → Profit <strong style="color: #3fb950;">₹${totalProfit.toFixed(0)}</strong></span>
+                            </div>
+                        `;
+                    }).join('');
+                    document.getElementById('calc-content').innerHTML = calcContent;
+                }
+            }
+
+            // Update timestamp and express rate
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+            document.getElementById('express-rate').textContent = `Binance P2P Express Sell Rate: ₹${BINANCE_SELL_PRICE.toFixed(2)} (IMPS/Bank Transfer)`;
+        }
+
+        async function refresh() {
+            const prices = await fetchAllPrices();
+            await displayResults(prices);
+        }
+
+        // Initial load
+        refresh();
+
+        // Auto-refresh every 10 seconds for faster arbitrage
+        setInterval(refresh, 10000);
+    </script>
+</body>
+</html>
