@@ -14,7 +14,9 @@ const PORT = process.env.DASHBOARD_PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../../public')));
+// Serve static files from public directory
+const publicPath = path.resolve(process.cwd(), 'public');
+app.use(express.static(publicPath));
 
 // Create HTTP server
 const server = http.createServer(app);
