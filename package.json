@@ -62,7 +62,14 @@
     "test:calculator": "tsx src/scripts/testRealisticCalculator.ts",
     "db:test": "tsx src/scripts/testPostgresConnection.ts",
     "dashboard": "tsx src/api/dashboardServer.ts",
-    "dashboard:open": "open http://localhost:3001"
+    "dashboard:open": "open http://localhost:3001",
+    "monitor:integrated": "tsx src/scripts/integratedMonitoring.ts",
+    "trading:auto": "tsx src/scripts/runAutoTrading.ts",
+    "trading:report": "tsx src/scripts/generateTradingReport.ts",
+    "mobile:trading": "tsx src/api/mobileTradingServer.ts",
+    "test:system": "tsx src/scripts/testTradingSystem.ts",
+    "test:mobile": "tsx src/scripts/testMobileAccess.ts",
+    "monitor:health": "tsx src/scripts/systemHealthMonitor.ts"
   },
   "keywords": [],
   "author": "",

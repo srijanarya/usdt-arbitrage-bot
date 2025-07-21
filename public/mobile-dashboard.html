@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>USDT Arbitrage Trading</title>
+    <style>
+        :root {
+            --primary: #0066ff;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1a202c;
+            --light: #f7fafc;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--light);
+            color: var(--dark);
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Auth Screen */
+        .auth-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, #0052cc 100%);
+        }
+
+        .auth-card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 320px;
+            text-align: center;
+        }
+
+        .auth-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .auth-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .pin-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 24px;
+            text-align: center;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            letter-spacing: 10px;
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .auth-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Main Dashboard */
+        .dashboard {
+            display: none;
+            min-height: 100vh;
+            background: var(--light);
+        }
+
+        /* Header */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .status-badge.active {
+            background: var(--success);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:active {
+            transform: scale(0.98);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .stat-value.profit {
+            color: var(--success);
+        }
+
+        .stat-value.loss {
+            color: var(--danger);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            padding: 0 20px 20px;
+        }
+
+        .control-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .control-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .toggle-button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .toggle-button.start {
+            background: var(--success);
+            color: white;
+        }
+
+        .toggle-button.stop {
+            background: var(--danger);
+            color: white;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .setting-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .setting-input {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        /* Price Monitor */
+        .price-monitor {
+            padding: 0 20px 20px;
+        }
+
+        .price-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .price-header {
+            background: var(--dark);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+
+        .price-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .price-item:last-child {
+            border-bottom: none;
+        }
+
+        .exchange-name {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .price-values {
+            text-align: right;
+        }
+
+        .buy-price, .sell-price {
+            font-size: 14px;
+        }
+
+        .buy-price {
+            color: var(--danger);
+        }
+
+        .sell-price {
+            color: var(--success);
+        }
+
+        /* Opportunities */
+        .opportunities {
+            padding: 0 20px 20px;
+        }
+
+        .opportunity-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--success);
+        }
+
+        .opportunity-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .opportunity-route {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .opportunity-profit {
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .opportunity-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            padding: 10px 0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .nav-label {
+            font-size: 12px;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 320px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Screen -->
+    <div class="auth-screen" id="authScreen">
+        <div class="auth-card">
+            <div class="auth-title">USDT Arbitrage</div>
+            <div class="auth-subtitle">Enter PIN to access</div>
+            <input type="password" 
+                   class="pin-input" 
+                   id="pinInput" 
+                   placeholder="••••" 
+                   maxlength="4" 
+                   pattern="[0-9]*" 
+                   inputmode="numeric">
+            <button class="auth-button" onclick="authenticate()">
+                <span id="authButtonText">Login</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="header-title">Trading Dashboard</div>
+                <div class="status-badge" id="tradingStatus">OFFLINE</div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Daily P&L</div>
+                <div class="stat-value profit" id="dailyPnL">₹0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Win Rate</div>
+                <div class="stat-value" id="winRate">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Volume</div>
+                <div class="stat-value" id="dailyVolume">₹0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active</div>
+                <div class="stat-value" id="activeTrades">0</div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="control-card">
+                <div class="control-title">Trading Control</div>
+                <button class="toggle-button start" id="tradingToggle" onclick="toggleTrading()">
+                    Start Trading
+                </button>
+                
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label class="setting-label">Min Profit</label>
+                        <input type="number" class="setting-input" id="minProfit" value="200">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">Min ROI %</label>
+                        <input type="number" class="setting-input" id="minROI" value="2">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">Max/Trade</label>
+                        <input type="number" class="setting-input" id="maxAmount" value="100">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">Daily Limit</label>
+                        <input type="number" class="setting-input" id="dailyLimit" value="10000">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price Monitor -->
+        <div class="price-monitor">
+            <div class="price-card">
+                <div class="price-header">Live Prices</div>
+                <div id="priceList"></div>
+            </div>
+        </div>
+
+        <!-- Opportunities -->
+        <div class="opportunities" id="opportunities">
+            <!-- Opportunities will be added here -->
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active">
+                <div class="nav-icon">📊</div>
+                <div class="nav-label">Dashboard</div>
+            </div>
+            <div class="nav-item" onclick="generateReport()">
+                <div class="nav-icon">📈</div>
+                <div class="nav-label">Reports</div>
+            </div>
+            <div class="nav-item" onclick="showSettings()">
+                <div class="nav-icon">⚙️</div>
+                <div class="nav-label">Settings</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let token = null;
+        let isTrading = false;
+
+        // Authentication
+        function authenticate() {
+            const pin = document.getElementById('pinInput').value;
+            const button = document.getElementById('authButtonText');
+            
+            button.innerHTML = '<div class="loading"></div>';
+            
+            // Simple auth for demo - in production use proper auth
+            if (pin === '1234' || pin === localStorage.getItem('pin')) {
+                localStorage.setItem('authenticated', 'true');
+                connectWebSocket();
+                showDashboard();
+            } else {
+                button.textContent = 'Invalid PIN';
+                setTimeout(() => {
+                    button.textContent = 'Login';
+                    document.getElementById('pinInput').value = '';
+                }, 2000);
+            }
+        }
+
+        // WebSocket connection
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}`);
+            
+            ws.onopen = () => {
+                console.log('Connected to server');
+                // Send auth
+                ws.send(JSON.stringify({ type: 'auth', pin: '1234' }));
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            };
+            
+            ws.onclose = () => {
+                console.log('Disconnected from server');
+                setTimeout(connectWebSocket, 5000); // Reconnect
+            };
+        }
+
+        // Handle WebSocket messages
+        function handleMessage(data) {
+            switch (data.type) {
+                case 'auth':
+                    if (data.success) {
+                        token = data.token;
+                        showNotification('Connected to trading server');
+                    }
+                    break;
+                    
+                case 'update':
+                    updateDashboard(data);
+                    break;
+                    
+                case 'opportunity':
+                    showOpportunity(data.data);
+                    break;
+                    
+                case 'execution':
+                    showExecution(data);
+                    break;
+                    
+                case 'report':
+                    showReport(data.data);
+                    break;
+            }
+        }
+
+        // Update dashboard
+        function updateDashboard(data) {
+            // Update stats
+            document.getElementById('dailyPnL').textContent = `₹${data.trading.dailyProfit.toFixed(2)}`;
+            document.getElementById('dailyPnL').className = `stat-value ${data.trading.dailyProfit >= 0 ? 'profit' : 'loss'}`;
+            document.getElementById('winRate').textContent = `${data.risk.winRate}%`;
+            document.getElementById('dailyVolume').textContent = `₹${data.trading.dailyVolume.toFixed(0)}`;
+            document.getElementById('activeTrades').textContent = data.trading.activeExecutions;
+            
+            // Update status
+            isTrading = data.trading.enabled;
+            const statusBadge = document.getElementById('tradingStatus');
+            const tradingToggle = document.getElementById('tradingToggle');
+            
+            if (isTrading) {
+                statusBadge.textContent = 'ACTIVE';
+                statusBadge.className = 'status-badge active';
+                tradingToggle.textContent = 'Stop Trading';
+                tradingToggle.className = 'toggle-button stop';
+            } else {
+                statusBadge.textContent = 'OFFLINE';
+                statusBadge.className = 'status-badge';
+                tradingToggle.textContent = 'Start Trading';
+                tradingToggle.className = 'toggle-button start';
+            }
+            
+            // Update prices
+            updatePrices(data.prices);
+            
+            // Update settings
+            if (data.trading.config) {
+                document.getElementById('minProfit').value = data.trading.config.minProfit;
+                document.getElementById('minROI').value = data.trading.config.minROI;
+                document.getElementById('maxAmount').value = data.trading.config.maxAmountPerTrade;
+                document.getElementById('dailyLimit').value = data.trading.config.dailyLimit;
+            }
+        }
+
+        // Update prices
+        function updatePrices(prices) {
+            const priceList = document.getElementById('priceList');
+            priceList.innerHTML = '';
+            
+            prices.forEach(price => {
+                const item = document.createElement('div');
+                item.className = 'price-item';
+                item.innerHTML = `
+                    <div class="exchange-name">${price.exchange.toUpperCase()}</div>
+                    <div class="price-values">
+                        <div class="buy-price">Buy: ₹${price.buyPrice.toFixed(2)}</div>
+                        <div class="sell-price">Sell: ₹${price.sellPrice.toFixed(2)}</div>
+                    </div>
+                `;
+                priceList.appendChild(item);
+            });
+        }
+
+        // Show opportunity
+        function showOpportunity(opportunity) {
+            const container = document.getElementById('opportunities');
+            
+            const card = document.createElement('div');
+            card.className = 'opportunity-card';
+            card.innerHTML = `
+                <div class="opportunity-header">
+                    <div class="opportunity-route">${opportunity.buyExchange} → ${opportunity.sellExchange}</div>
+                    <div class="opportunity-profit">₹${opportunity.netProfit.toFixed(2)}</div>
+                </div>
+                <div class="opportunity-details">
+                    <div>Buy: ₹${opportunity.buyPrice.toFixed(2)}</div>
+                    <div>Sell: ₹${opportunity.sellPrice.toFixed(2)}</div>
+                    <div>ROI: ${opportunity.roi.toFixed(2)}%</div>
+                    <div>Amount: ${opportunity.amount} USDT</div>
+                </div>
+            `;
+            
+            container.insertBefore(card, container.firstChild);
+            
+            // Keep only last 5 opportunities
+            while (container.children.length > 5) {
+                container.removeChild(container.lastChild);
+            }
+            
+            // Show notification
+            showNotification(`New opportunity: ₹${opportunity.netProfit.toFixed(2)} profit`);
+            
+            // Vibrate if supported
+            if ('vibrate' in navigator) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        }
+
+        // Toggle trading
+        function toggleTrading() {
+            ws.send(JSON.stringify({ 
+                type: 'command', 
+                command: 'toggleTrading' 
+            }));
+        }
+
+        // Update config
+        function updateConfig() {
+            const config = {
+                minProfit: parseFloat(document.getElementById('minProfit').value),
+                minROI: parseFloat(document.getElementById('minROI').value),
+                maxAmountPerTrade: parseFloat(document.getElementById('maxAmount').value),
+                dailyLimit: parseFloat(document.getElementById('dailyLimit').value)
+            };
+            
+            ws.send(JSON.stringify({ 
+                type: 'command', 
+                command: 'updateConfig',
+                params: config
+            }));
+        }
+
+        // Generate report
+        function generateReport() {
+            ws.send(JSON.stringify({ 
+                type: 'command', 
+                command: 'generateReport' 
+            }));
+            showNotification('Generating report...');
+        }
+
+        // Show dashboard
+        function showDashboard() {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+        }
+
+        // Show notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Check auth on load
+        if (localStorage.getItem('authenticated') === 'true') {
+            connectWebSocket();
+            showDashboard();
+        }
+
+        // Listen for config changes
+        document.querySelectorAll('.setting-input').forEach(input => {
+            input.addEventListener('change', updateConfig);
+        });
+
+        // Enter key on PIN input
+        document.getElementById('pinInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                authenticate();
+            }
+        });
+
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>
