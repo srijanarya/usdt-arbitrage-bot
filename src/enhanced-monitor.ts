@@ -3,9 +3,12 @@ import chalk from 'chalk';
 import { MultiExchangeManager } from './services/enhanced/MultiExchangeManager';
 import { RiskManager } from './services/RiskManager';
 import { TriangularArbitrageEngine } from './services/enhanced/TriangularArbitrage';
+import { P2POrderValidator } from './services/p2p/orderValidator';
+import { arbitrageCalculator, P2PMerchant } from './services/arbitrage/USDTArbitrageCalculator';
 import { logger } from './utils/logger';
 import TelegramBot from 'node-telegram-bot-api';
 import dotenv from 'dotenv';
+import axios from 'axios';
 
 dotenv.config();
 
@@ -17,6 +20,10 @@ class EnhancedArbitrageBot {
   private telegramBot: TelegramBot | null = null;
   private isRunning = false;
   private port = process.env.PORT || 3000;
+  private p2pMonitorInterval: NodeJS.Timer | null = null;
+  private lastP2PData: any = null;
+  private userUSDTBalance = 100; // Your USDT balance
+  private userBuyPrice = 90.58; // Your average buy price
 
   constructor() {
     this.app = express();
@@ -39,7 +46,6 @@ class EnhancedArbitrageBot {
 
   private setupExpress() {
     this.app.use(express.json());
-    this.app.use(express.static('public'));
 
     // API endpoints
     this.app.get('/health', (req, res) => {
@@ -74,6 +80,31 @@ class EnhancedArbitrageBot {
         success: true,
         status: this.riskManager.getStatus(),
       });
+    });
+
+    // P2P endpoints
+    this.app.get('/api/p2p/opportunities', async (req, res) => {
+      try {
+        const data = await this.fetchP2POpportunities();
+        res.json({ success: true, data });
+      } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.get('/api/p2p/validate/:amount', async (req, res) => {
+      const amount = parseFloat(req.params.amount);
+      if (!this.lastP2PData) {
+        return res.json({ success: false, error: 'No P2P data available' });
+      }
+      
+      const validations = P2POrderValidator.validateOpportunities(
+        this.lastP2PData.slice(0, 10),
+        amount,
+        this.userBuyPrice
+      );
+      
+      res.json({ success: true, validations });
     });
 
     // Enhanced dashboard
@@ -146,6 +177,129 @@ class EnhancedArbitrageBot {
     }
   }
 
+  private async fetchP2POpportunities() {
+    try {
+      const response = await axios.post(
+        'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search',
+        {
+          page: 1,
+          rows: 20,
+          asset: 'USDT',
+          fiat: 'INR',
+          tradeType: 'SELL',
+          publisherType: null,
+          payTypes: ['UPI', 'IMPS', 'BANK_TRANSFER']
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        }
+      );
+
+      const ads = response.data.data || [];
+      const processed = ads.map((ad: any) => {
+        const merchant: P2PMerchant = {
+          id: ad.advertiser.userNo || 'unknown',
+          name: ad.advertiser.nickName,
+          price: parseFloat(ad.adv.price),
+          minAmount: parseFloat(ad.adv.minSingleTransAmount),
+          maxAmount: parseFloat(ad.adv.maxSingleTransAmount),
+          completedOrders: ad.advertiser.monthOrderCount,
+          completionRate: ad.advertiser.monthFinishRate * 100,
+          paymentMethods: ad.adv.tradeMethods.map((m: any) => m.identifier),
+          responseTime: ad.advertiser.avgReleaseTime,
+          platform: 'Binance P2P',
+          requirements: {
+            minOrders: 100,
+            minCompletionRate: 95
+          }
+        };
+        return merchant;
+      });
+
+      this.lastP2PData = processed;
+      return processed;
+    } catch (error) {
+      logger.error('Error fetching P2P data:', error);
+      throw error;
+    }
+  }
+
+  private async monitorP2POpportunities() {
+    try {
+      const p2pAds = await this.fetchP2POpportunities();
+      
+      // Use enhanced calculator to find best compatible merchant
+      const { merchant: bestMerchant, analysis } = arbitrageCalculator.findBestMerchant(
+        p2pAds,
+        this.userBuyPrice,
+        this.userUSDTBalance
+      );
+
+      if (bestMerchant && analysis && analysis.profitable) {
+        // Double-check with P2P validator for additional validations
+        const validations = P2POrderValidator.validateOpportunities(
+          [bestMerchant],
+          this.userUSDTBalance,
+          this.userBuyPrice
+        );
+
+        const validation = validations[0];
+        if (!validation) return;
+
+        if (validation && validation.validation.isValid) {
+          const message = `
+💰 *P2P OPPORTUNITY FOUND*
+
+*Merchant:* ${bestMerchant.name}
+*Sell Price:* ₹${bestMerchant.price.toFixed(2)}
+*Your Buy Price:* ₹${this.userBuyPrice.toFixed(2)}
+*Amount:* ${this.userUSDTBalance} USDT
+*INR Amount:* ₹${(bestMerchant.price * this.userUSDTBalance).toFixed(2)}
+*Profit:* ₹${analysis.netProfit.toFixed(2)} (${analysis.roi.toFixed(2)}% ROI)
+*Payment Methods:* ${bestMerchant.paymentMethods.join(', ')}
+*Merchant Stats:* ${bestMerchant.completedOrders} orders (${bestMerchant.completionRate.toFixed(1)}%)
+*Status:* ✅ Order meets all requirements
+
+⏰ ${new Date().toLocaleTimeString('en-IN')}
+          `;
+
+          logger.info(message);
+          
+          if (this.telegramBot && analysis.roi >= 1.0) {
+            await this.telegramBot.sendMessage(
+              process.env.TELEGRAM_CHAT_ID || '1271429958',
+              message,
+              { parse_mode: 'Markdown' }
+            );
+          }
+        }
+      } else if (p2pAds.length > 0) {
+        // Log why no compatible merchants found
+        const incompatible = p2pAds.filter(merchant => {
+          const compatibility = arbitrageCalculator.checkPaymentCompatibility(
+            merchant,
+            merchant.price * this.userUSDTBalance
+          );
+          return !compatibility.compatible;
+        });
+
+        if (incompatible.length > 0) {
+          logger.warn(`Found ${incompatible.length} merchants with incompatible payment methods`);
+          incompatible.slice(0, 3).forEach(merchant => {
+            logger.debug(`${merchant.name}: Accepts ${merchant.paymentMethods.join(', ')}`);
+          });
+        }
+      }
+
+
+    } catch (error) {
+      logger.error('P2P monitoring error:', error);
+    }
+  }
+
   async start() {
     console.log(chalk.bgCyan.black('\n 🚀 ENHANCED USDT ARBITRAGE BOT V2.0 \n'));
     console.log(chalk.gray('Powered by CCXT with Multi-Exchange Support\n'));
@@ -159,10 +313,19 @@ class EnhancedArbitrageBot {
         'BNB/USDT'
       ]);
 
+      // Start P2P monitoring
+      this.p2pMonitorInterval = setInterval(() => {
+        this.monitorP2POpportunities();
+      }, 30000); // Check every 30 seconds
+
+      // Initial P2P check
+      await this.monitorP2POpportunities();
+
       // Start Express server
       this.app.listen(this.port, () => {
         console.log(chalk.green(`✅ Dashboard running at http://localhost:${this.port}`));
         console.log(chalk.green(`✅ API available at http://localhost:${this.port}/api/opportunities`));
+        console.log(chalk.green(`✅ P2P API available at http://localhost:${this.port}/api/p2p/opportunities`));
       });
 
       this.isRunning = true;
@@ -175,7 +338,7 @@ class EnhancedArbitrageBot {
       if (this.telegramBot) {
         await this.telegramBot.sendMessage(
           process.env.TELEGRAM_CHAT_ID || '1271429958',
-          `🚀 *Enhanced Arbitrage Bot Started*\n\nVersion: 2.0.0\nExchanges: ${Array.from(this.exchangeManager.exchanges.keys()).join(', ')}\nFeatures: CCXT, WebSockets, Triangular Arbitrage`,
+          `🚀 *Enhanced Arbitrage Bot Started*\n\nVersion: 2.0.0\nExchanges: ${Array.from(this.exchangeManager.exchanges.keys()).join(', ')}\nFeatures: CCXT, WebSockets, P2P Monitoring, Order Validation\nUSDT Balance: ${this.userUSDTBalance}\nBuy Price: ₹${this.userBuyPrice}`,
           { parse_mode: 'Markdown' }
         );
       }
@@ -198,6 +361,26 @@ class EnhancedArbitrageBot {
     this.exchangeManager.exchanges.forEach((exchange, name) => {
       console.log(`  ${name}: ${chalk.green('✅ Connected')}`);
     });
+
+    // Display P2P status
+    if (this.lastP2PData && this.lastP2PData.length > 0) {
+      console.log(chalk.yellow('\n💱 P2P Market Status:'));
+      const topP2P = this.lastP2PData.slice(0, 3);
+      topP2P.forEach((ad: any) => {
+        const profit = ((ad.price - this.userBuyPrice) / this.userBuyPrice) * 100;
+        const validation = P2POrderValidator.validateOrder(
+          this.userUSDTBalance,
+          ad.price,
+          ad.minAmount,
+          ad.maxAmount
+        );
+        
+        const status = validation.isValid ? chalk.green('✅') : chalk.red('❌');
+        const profitColor = profit >= 1.0 ? chalk.green : profit >= 0.5 ? chalk.yellow : chalk.red;
+        
+        console.log(`  ${ad.merchant}: ₹${ad.price} ${profitColor(`(${profit.toFixed(2)}%)`)} ${status} Min: ₹${ad.minAmount}`);
+      });
+    }
 
     console.log(chalk.yellow('\n💰 Top Opportunities:'));
     if (opportunities.length > 0) {

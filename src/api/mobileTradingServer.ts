@@ -370,6 +370,4 @@ export function startMobileTradingServer(port: number = 3333) {
 }
 
 // Auto-start if run directly
-if (require.main === module) {
-  startMobileTradingServer();
-}
+startMobileTradingServer();

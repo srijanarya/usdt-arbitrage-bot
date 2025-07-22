@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { P2PMerchant } from './USDTArbitrageCalculator';
 
 interface ZebPayArbitrage {
   amount: number;
@@ -11,9 +12,14 @@ interface ZebPayArbitrage {
   netProfit: number;
   roi: number;
   profitable: boolean;
+  paymentCompatible?: boolean;
+  compatibleMerchants?: P2PMerchant[];
 }
 
 export class ZebPayConstrainedCalculator {
+  // User's payment methods (same as main calculator)
+  private readonly userPaymentMethods = ['UPI', 'Bank Transfer', 'IMPS'];
+  
   private readonly constraints = {
     maxWithdrawal: 100,        // ZebPay limit: 100 USDT
     tronTransferFee: 3,        // 3 USDT transfer fee
@@ -21,7 +27,7 @@ export class ZebPayConstrainedCalculator {
     tds: 0.01                  // 1% TDS on P2P sale
   };
 
-  calculateRealProfit(buyPrice: number, sellPrice: number, amount: number = 100): ZebPayArbitrage {
+  calculateRealProfit(buyPrice: number, sellPrice: number, amount: number = 100, merchant?: P2PMerchant): ZebPayArbitrage {
     // Can't exceed 100 USDT on ZebPay
     const actualAmount = Math.min(amount, this.constraints.maxWithdrawal);
     
@@ -42,6 +48,24 @@ export class ZebPayConstrainedCalculator {
     const netProfit = netRevenue - totalInvestment;
     const roi = (netProfit / totalInvestment) * 100;
     
+    // Step 5: Check payment compatibility if merchant provided
+    let paymentCompatible = true;
+    let compatibleMerchants: P2PMerchant[] = [];
+    
+    if (merchant) {
+      const hasCompatibleMethod = merchant.paymentMethods.some(method => 
+        this.userPaymentMethods.some(userMethod => 
+          method.toLowerCase().includes(userMethod.toLowerCase()) ||
+          userMethod.toLowerCase().includes(method.toLowerCase())
+        )
+      );
+      
+      paymentCompatible = hasCompatibleMethod;
+      if (paymentCompatible) {
+        compatibleMerchants = [merchant];
+      }
+    }
+    
     return {
       amount: actualAmount,
       buyPrice,
@@ -52,7 +76,9 @@ export class ZebPayConstrainedCalculator {
       revenue: netRevenue,
       netProfit,
       roi,
-      profitable: netProfit > 0
+      profitable: netProfit > 0 && paymentCompatible,
+      paymentCompatible,
+      compatibleMerchants
     };
   }
 
@@ -77,8 +103,8 @@ export class ZebPayConstrainedCalculator {
     return result;
   }
 
-  displayConstrainedAnalysis(buyPrice: number, sellPrice: number) {
-    const analysis = this.calculateRealProfit(buyPrice, sellPrice);
+  displayConstrainedAnalysis(buyPrice: number, sellPrice: number, merchant?: P2PMerchant) {
+    const analysis = this.calculateRealProfit(buyPrice, sellPrice, 100, merchant);
     
     console.log(chalk.cyan('\n═══════════════════════════════════════'));
     console.log(chalk.cyan('    ZEBPAY CONSTRAINED ANALYSIS        '));
@@ -97,11 +123,18 @@ export class ZebPayConstrainedCalculator {
     console.log(`   ROI: ${analysis.roi >= 0 ? chalk.green(`${analysis.roi.toFixed(2)}%`) : chalk.red(`${analysis.roi.toFixed(2)}%`)}\n`);
     
     if (!analysis.profitable) {
-      console.log(chalk.red('❌ NOT PROFITABLE due to transfer fees!\n'));
+      if (analysis.paymentCompatible === false) {
+        console.log(chalk.red('❌ NOT PROFITABLE - Payment method incompatible!\n'));
+      } else {
+        console.log(chalk.red('❌ NOT PROFITABLE due to transfer fees!\n'));
+      }
     } else if (analysis.netProfit < 100) {
       console.log(chalk.yellow('⚠️  Profit below ₹100 threshold\n'));
     } else {
       console.log(chalk.green('✅ Profitable even with constraints!\n'));
+      if (analysis.compatibleMerchants && analysis.compatibleMerchants.length > 0) {
+        console.log(chalk.green(`   Compatible with merchant: ${analysis.compatibleMerchants[0].name}\n`));
+      }
     }
     
     console.log(chalk.cyan('═══════════════════════════════════════\n'));

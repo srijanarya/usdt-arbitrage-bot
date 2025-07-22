@@ -1,4 +1,35 @@
 import chalk from 'chalk';
+import { paymentConfig } from '../../config/paymentConfig';
+
+// Payment method types
+export interface PaymentMethod {
+  type: 'UPI' | 'Bank Transfer' | 'IMPS' | 'NEFT' | 'RTGS' | 'PayPal' | 'Paytm';
+  enabled: boolean;
+  limits?: {
+    min: number;
+    max: number;
+  };
+}
+
+// P2P Merchant interface with payment requirements
+export interface P2PMerchant {
+  id: string;
+  name: string;
+  price: number;
+  minAmount: number;
+  maxAmount: number;
+  completedOrders: number;
+  completionRate: number;
+  paymentMethods: string[];
+  responseTime?: number;
+  platform: string;
+  requirements?: {
+    minOrders?: number;
+    minCompletionRate?: number;
+    accountAgeInDays?: number;
+    kycRequired?: boolean;
+  };
+}
 
 interface ProfitAnalysis {
   buyPrice: number;
@@ -13,6 +44,9 @@ interface ProfitAnalysis {
   recommendedAction: string;
   meetsMinQuantity: boolean;
   minQuantityRequired?: number;
+  paymentMethodCompatible?: boolean;
+  compatibleMerchants?: P2PMerchant[];
+  incompatibilityReason?: string;
 }
 
 interface MinimumQuantityCriteria {
@@ -35,6 +69,13 @@ interface TradingSignal {
 }
 
 export class USDTArbitrageCalculator {
+  // User's configured payment methods
+  private readonly userPaymentMethods: PaymentMethod[] = [
+    { type: 'UPI', enabled: true, limits: { min: 100, max: 100000 } },
+    { type: 'Bank Transfer', enabled: true, limits: { min: 1000, max: 1000000 } },
+    { type: 'IMPS', enabled: true, limits: { min: 100, max: 200000 } }
+  ];
+
   // Fee structure based on your document
   private readonly fees = {
     zebpay: {
@@ -76,9 +117,115 @@ export class USDTArbitrageCalculator {
   };
 
   /**
+   * Check payment method compatibility between user and merchant
+   */
+  checkPaymentCompatibility(merchant: P2PMerchant, orderAmount: number): {
+    compatible: boolean;
+    availableMethods: string[];
+    reason?: string;
+  } {
+    // Get user's enabled payment methods
+    const userMethods = this.userPaymentMethods
+      .filter(m => m.enabled)
+      .map(m => m.type);
+
+    // Find common payment methods
+    const commonMethods = merchant.paymentMethods.filter(method => 
+      userMethods.some(userMethod => 
+        this.normalizePaymentMethod(method) === this.normalizePaymentMethod(userMethod)
+      )
+    );
+
+    // Check if order amount is within limits for any common method
+    const validMethods = commonMethods.filter(method => {
+      const userMethod = this.userPaymentMethods.find(m => 
+        this.normalizePaymentMethod(m.type) === this.normalizePaymentMethod(method)
+      );
+      if (!userMethod?.limits) return true;
+      return orderAmount >= userMethod.limits.min && orderAmount <= userMethod.limits.max;
+    });
+
+    if (commonMethods.length === 0) {
+      return {
+        compatible: false,
+        availableMethods: [],
+        reason: `No common payment methods. Merchant accepts: ${merchant.paymentMethods.join(', ')}`
+      };
+    }
+
+    if (validMethods.length === 0) {
+      return {
+        compatible: false,
+        availableMethods: [],
+        reason: `Order amount ₹${orderAmount} outside limits for available methods`
+      };
+    }
+
+    return {
+      compatible: true,
+      availableMethods: validMethods
+    };
+  }
+
+  /**
+   * Check if merchant meets user requirements
+   */
+  checkMerchantRequirements(merchant: P2PMerchant): {
+    qualified: boolean;
+    issues: string[];
+  } {
+    const issues: string[] = [];
+
+    // Check minimum order requirements
+    if (merchant.requirements?.minOrders && merchant.completedOrders < merchant.requirements.minOrders) {
+      issues.push(`Merchant has only ${merchant.completedOrders} orders (min: ${merchant.requirements.minOrders})`);
+    }
+
+    // Check completion rate
+    const minCompletionRate = merchant.requirements?.minCompletionRate || 95;
+    if (merchant.completionRate < minCompletionRate) {
+      issues.push(`Completion rate ${merchant.completionRate}% below minimum ${minCompletionRate}%`);
+    }
+
+    // Check KYC if required
+    if (merchant.requirements?.kycRequired) {
+      // Assume user has KYC completed based on payment config
+      const userHasKYC = paymentConfig.verification.autoVerify;
+      if (!userHasKYC) {
+        issues.push('Merchant requires KYC verification');
+      }
+    }
+
+    return {
+      qualified: issues.length === 0,
+      issues
+    };
+  }
+
+  /**
+   * Normalize payment method names for comparison
+   */
+  private normalizePaymentMethod(method: string): string {
+    const normalizedMap: { [key: string]: string } = {
+      'upi': 'UPI',
+      'bank transfer': 'Bank Transfer',
+      'banktransfer': 'Bank Transfer',
+      'bank': 'Bank Transfer',
+      'imps': 'IMPS',
+      'neft': 'NEFT',
+      'rtgs': 'RTGS',
+      'paytm': 'Paytm',
+      'paypal': 'PayPal'
+    };
+
+    const normalized = method.toLowerCase().trim();
+    return normalizedMap[normalized] || method;
+  }
+
+  /**
    * Calculate detailed profit analysis for arbitrage
    */
-  calculateProfit(buyPrice: number, sellPrice: number, amount: number, exchange: string = 'zebpay'): ProfitAnalysis {
+  calculateProfit(buyPrice: number, sellPrice: number, amount: number, exchange: string = 'zebpay', merchant?: P2PMerchant): ProfitAnalysis {
     // Check minimum quantity requirements
     const meetsMinQuantity = this.checkMinimumQuantity(amount, buyPrice, exchange);
     const minQuantityRequired = this.getMinQuantityRequired(exchange, buyPrice);
@@ -99,9 +246,32 @@ export class USDTArbitrageCalculator {
     const netProfit = netRevenue - totalInvestment - withdrawalCost;
     const roi = (netProfit / totalInvestment) * 100;
 
-    // Step 4: Determine profitability
-    const profitable = netProfit >= this.riskParams.minProfitINR && meetsMinQuantity;
-    const recommendedAction = this.getRecommendation(netProfit, roi, meetsMinQuantity);
+    // Step 4: Check payment compatibility if merchant provided
+    let paymentMethodCompatible = true;
+    let compatibleMerchants: P2PMerchant[] = [];
+    let incompatibilityReason: string | undefined;
+
+    if (merchant) {
+      const orderAmount = sellPrice * amount;
+      const compatibility = this.checkPaymentCompatibility(merchant, orderAmount);
+      const requirements = this.checkMerchantRequirements(merchant);
+      
+      paymentMethodCompatible = compatibility.compatible && requirements.qualified;
+      
+      if (!compatibility.compatible) {
+        incompatibilityReason = compatibility.reason;
+      } else if (!requirements.qualified) {
+        incompatibilityReason = requirements.issues.join('; ');
+      }
+      
+      if (paymentMethodCompatible) {
+        compatibleMerchants = [merchant];
+      }
+    }
+
+    // Step 5: Determine profitability
+    const profitable = netProfit >= this.riskParams.minProfitINR && meetsMinQuantity && paymentMethodCompatible;
+    const recommendedAction = this.getRecommendation(netProfit, roi, meetsMinQuantity, paymentMethodCompatible);
 
     return {
       buyPrice,
@@ -115,30 +285,35 @@ export class USDTArbitrageCalculator {
       profitable,
       recommendedAction,
       meetsMinQuantity,
-      minQuantityRequired
+      minQuantityRequired,
+      paymentMethodCompatible,
+      compatibleMerchants,
+      incompatibilityReason
     };
   }
 
   /**
    * Quick profitability check
    */
-  quickProfitCheck(buyPrice: number, sellPrice: number, amount: number, exchange: string = 'zebpay') {
-    const analysis = this.calculateProfit(buyPrice, sellPrice, amount, exchange);
+  quickProfitCheck(buyPrice: number, sellPrice: number, amount: number, exchange: string = 'zebpay', merchant?: P2PMerchant) {
+    const analysis = this.calculateProfit(buyPrice, sellPrice, amount, exchange, merchant);
     
     return {
       profitable: analysis.profitable,
       netProfit: analysis.netProfit,
       roi: analysis.roi,
       meetsMinQuantity: analysis.meetsMinQuantity,
-      action: analysis.profitable ? 'EXECUTE' : 'SKIP'
+      paymentCompatible: analysis.paymentMethodCompatible,
+      action: analysis.profitable ? 'EXECUTE' : 'SKIP',
+      incompatibilityReason: analysis.incompatibilityReason
     };
   }
 
   /**
    * Generate trading signal with risk assessment
    */
-  getTradingSignal(buyPrice: number, sellPrice: number, amount: number, minProfit: number = 100): TradingSignal {
-    const analysis = this.calculateProfit(buyPrice, sellPrice, amount);
+  getTradingSignal(buyPrice: number, sellPrice: number, amount: number, minProfit: number = 100, merchant?: P2PMerchant): TradingSignal {
+    const analysis = this.calculateProfit(buyPrice, sellPrice, amount, 'zebpay', merchant);
     
     // Determine signal
     let signal: 'BUY' | 'HOLD' | 'WAIT' = 'WAIT';
@@ -161,6 +336,12 @@ export class USDTArbitrageCalculator {
       signal = 'WAIT';
       reason = `Unprofitable: Loss of ₹${Math.abs(analysis.netProfit).toFixed(2)}`;
       riskLevel = 'HIGH';
+    }
+
+    // Add payment compatibility to reason if incompatible
+    if (!analysis.paymentMethodCompatible && analysis.incompatibilityReason) {
+      reason += ` | Payment issue: ${analysis.incompatibilityReason}`;
+      signal = 'WAIT';
     }
     
     return {
@@ -268,11 +449,48 @@ export class USDTArbitrageCalculator {
   }
 
   /**
+   * Filter compatible merchants from a list
+   */
+  filterCompatibleMerchants(merchants: P2PMerchant[], orderAmount: number): P2PMerchant[] {
+    return merchants.filter(merchant => {
+      const compatibility = this.checkPaymentCompatibility(merchant, orderAmount);
+      const requirements = this.checkMerchantRequirements(merchant);
+      return compatibility.compatible && requirements.qualified;
+    });
+  }
+
+  /**
+   * Find best merchant for arbitrage
+   */
+  findBestMerchant(merchants: P2PMerchant[], buyPrice: number, amount: number): {
+    merchant: P2PMerchant | null;
+    analysis: ProfitAnalysis | null;
+  } {
+    const orderAmount = buyPrice * amount;
+    const compatibleMerchants = this.filterCompatibleMerchants(merchants, orderAmount);
+
+    if (compatibleMerchants.length === 0) {
+      return { merchant: null, analysis: null };
+    }
+
+    // Sort by price (highest first for selling)
+    const sortedMerchants = compatibleMerchants.sort((a, b) => b.price - a.price);
+    const bestMerchant = sortedMerchants[0];
+    const analysis = this.calculateProfit(buyPrice, bestMerchant.price, amount, 'zebpay', bestMerchant);
+
+    return { merchant: bestMerchant, analysis };
+  }
+
+  /**
    * Get recommendation based on profit analysis
    */
-  private getRecommendation(netProfit: number, roi: number, meetsMinQuantity: boolean): string {
+  private getRecommendation(netProfit: number, roi: number, meetsMinQuantity: boolean, paymentCompatible: boolean = true): string {
     if (!meetsMinQuantity) {
       return "❌ SKIP - Below minimum quantity requirement";
+    }
+
+    if (!paymentCompatible) {
+      return "❌ SKIP - No compatible payment methods with merchant";
     }
     
     if (netProfit >= 500 && roi >= 5) {
@@ -306,6 +524,12 @@ export class USDTArbitrageCalculator {
       console.log(chalk.red(`   ⚠️  Below min qty:    ${analysis.minQuantityRequired?.toFixed(2)} USDT required`));
     } else {
       console.log(chalk.green(`   ✅ Meets min qty:    ${analysis.minQuantityRequired?.toFixed(2)} USDT`));
+    }
+    
+    if (analysis.paymentMethodCompatible === false) {
+      console.log(chalk.red(`   ⚠️  Payment issue:    ${analysis.incompatibilityReason}`));
+    } else if (analysis.compatibleMerchants && analysis.compatibleMerchants.length > 0) {
+      console.log(chalk.green(`   ✅ Payment compatible with ${analysis.compatibleMerchants.length} merchant(s)`));
     }
     console.log('');
 

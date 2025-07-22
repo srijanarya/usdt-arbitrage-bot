@@ -114,6 +114,4 @@ export function startRealtimeServer(port: number = 4001) {
 }
 
 // Auto-start if run directly
-if (require.main === module) {
-  startRealtimeServer();
-}
+startRealtimeServer();
