@@ -1,106 +1,80 @@
-import dotenv from 'dotenv';
 
-dotenv.config();
+import { DynamicPositionSizer, createDynamicSizer } from '../services/trading/DynamicPositionSizer';
+import { logger } from '../utils/logger';
 
-export interface TradingConfig {
-  enabled: boolean;
-  minProfitThreshold: number;
-  maxTradeAmount: number;
-  minTradeAmount: number;
-  riskManagement: {
-    maxDailyLoss: number;
-    maxConsecutiveLosses: number;
-    stopLossPercent: number;
-    takeProfitPercent: number;
-  };
+// Original trading configuration
+export const tradingConfig = {
+  // Exchange configurations
   exchanges: {
-    [exchange: string]: {
-      enabled: boolean;
-      maxBalance: number;
-      minOrderSize: number;
-      tradingFees: number;
-    };
-  };
-  notifications: {
-    telegram: boolean;
-    email: boolean;
-    webhooks: string[];
-  };
-  safetyFeatures: {
-    testMode: boolean;
-    requireConfirmation: boolean;
-    maxSlippage: number;
-    priceValiditySeconds: number;
-  };
-}
-
-export const tradingConfig: TradingConfig = {
-  enabled: process.env.ENABLE_AUTO_TRADING === 'true',
-  minProfitThreshold: parseFloat(process.env.MIN_PROFIT_THRESHOLD || '100'),
-  maxTradeAmount: parseFloat(process.env.MAX_TRADE_AMOUNT || '10000'),
-  minTradeAmount: parseFloat(process.env.MIN_TRADE_AMOUNT || '1000'),
-  
-  riskManagement: {
-    maxDailyLoss: parseFloat(process.env.MAX_DAILY_LOSS || '5000'),
-    maxConsecutiveLosses: parseInt(process.env.MAX_CONSECUTIVE_LOSSES || '3'),
-    stopLossPercent: parseFloat(process.env.STOP_LOSS_PERCENT || '2'),
-    takeProfitPercent: parseFloat(process.env.TAKE_PROFIT_PERCENT || '3'),
+    binance: { enabled: true, testMode: false },
+    coindcx: { enabled: true, testMode: false },
+    zebpay: { enabled: true, testMode: false }
   },
   
-  exchanges: {
-    zebpay: {
-      enabled: true,
-      maxBalance: 50000,
-      minOrderSize: parseFloat(process.env.ZEBPAY_MIN_ORDER || '8'),
-      tradingFees: 0.0025, // 0.25%
-    },
-    coindcx: {
-      enabled: true,
-      maxBalance: 50000,
-      minOrderSize: parseFloat(process.env.COINDCX_MIN_ORDER || '5'),
-      tradingFees: 0.001, // 0.1%
-    },
-    binance: {
-      enabled: true,
-      maxBalance: 100000,
-      minOrderSize: parseFloat(process.env.BINANCE_MIN_ORDER || '12'),
-      tradingFees: 0.001, // 0.1%
-    },
-    kucoin: {
-      enabled: true,
-      maxBalance: 50000,
-      minOrderSize: parseFloat(process.env.KUCOIN_MIN_ORDER || '6'),
-      tradingFees: 0.001, // 0.1%
-    },
+  // Arbitrage settings
+  arbitrage: {
+    minProfitPercent: parseFloat(process.env.MIN_PROFIT_THRESHOLD || '0.5'),
+    maxPositionSize: parseFloat(process.env.MAX_POSITION_SIZE || '10'),
+    checkInterval: 5000, // 5 seconds
+    executionDelay: 100  // 100ms
   },
   
-  notifications: {
-    telegram: process.env.TELEGRAM_ENABLED === 'true',
-    email: process.env.EMAIL_NOTIFICATIONS === 'true',
-    webhooks: process.env.WEBHOOK_URLS?.split(',') || [],
+  // NEW: Dynamic position sizing
+  positionSizing: {
+    enabled: true,
+    mode: 'dynamic', // 'fixed' or 'dynamic'
+    fixedPercent: 10, // Used when mode is 'fixed'
+    dynamicConfig: {
+      minPercent: 1,
+      maxPercent: 15,
+      kellyScalar: 0.25,
+      volatilityWindow: 24, // hours
+      drawdownThreshold: 10 // percent
+    }
   },
   
-  safetyFeatures: {
-    testMode: process.env.NODE_ENV !== 'production',
-    requireConfirmation: process.env.REQUIRE_CONFIRMATION === 'true',
-    maxSlippage: parseFloat(process.env.MAX_SLIPPAGE || '0.5'), // 0.5%
-    priceValiditySeconds: parseInt(process.env.PRICE_VALIDITY_SECONDS || '10'),
-  },
+  // Risk management
+  risk: {
+    maxDailyLoss: 5, // percent
+    maxConsecutiveLosses: 3,
+    stopLossPercent: 2,
+    takeProfitPercent: 5,
+    circuitBreaker: {
+      enabled: true,
+      threshold: 10 // percent daily loss
+    }
+  }
 };
 
-// Validation
-export function validateTradingConfig(): void {
-  if (tradingConfig.minProfitThreshold < 0) {
-    throw new Error('MIN_PROFIT_THRESHOLD must be positive');
+// Initialize position sizer
+let positionSizer: DynamicPositionSizer | null = null;
+
+export function getPositionSizer(): DynamicPositionSizer {
+  if (!positionSizer) {
+    const initialCapital = parseFloat(process.env.INITIAL_CAPITAL || '10000');
+    positionSizer = createDynamicSizer(initialCapital);
   }
-  
-  if (tradingConfig.maxTradeAmount < tradingConfig.minTradeAmount) {
-    throw new Error('MAX_TRADE_AMOUNT must be greater than MIN_TRADE_AMOUNT');
-  }
-  
-  if (tradingConfig.riskManagement.stopLossPercent >= 100) {
-    throw new Error('STOP_LOSS_PERCENT must be less than 100');
-  }
-  
-  console.log('✅ Trading configuration validated successfully');
+  return positionSizer;
 }
+
+// Calculate position size for a trade opportunity
+export async function calculateTradeSize(
+  opportunity: { expectedProfit: number; confidence: number },
+  marketConditions: any
+): Promise<number> {
+  const sizer = getPositionSizer();
+  
+  if (tradingConfig.positionSizing.enabled && tradingConfig.positionSizing.mode === 'dynamic') {
+    const result = sizer.calculatePositionSize(opportunity, marketConditions);
+    logger.info('Dynamic position size calculated', result);
+    return result.size;
+  } else {
+    // Fallback to fixed sizing
+    const capital = parseFloat(process.env.CURRENT_CAPITAL || '10000');
+    const size = (tradingConfig.positionSizing.fixedPercent / 100) * capital;
+    logger.info('Fixed position size', { size, percent: tradingConfig.positionSizing.fixedPercent });
+    return size;
+  }
+}
+
+export default tradingConfig;

@@ -171,7 +171,8 @@ async function testGmailConnection(refreshToken: string) {
     }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Run if executed directly
+if (require.main === module) {
     setupGmailAuth().catch(error => {
         logger.error('💥 Setup failed:', error);
         process.exit(1);

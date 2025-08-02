@@ -32,3 +32,20 @@ coverage/
 # API Keys
 **/api-keys.json
 **/credentials.json
+
+# Security files
+.credentials.enc
+.salt
+.env.bak
+
+# Logs
+logs/
+*.log
+
+# PM2
+.pm2/
+pids/
+
+# Oracle deployment
+*.tar.gz
+oracle-*.sh
