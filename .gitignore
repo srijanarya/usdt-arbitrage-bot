@@ -6,6 +6,7 @@ node_modules/
 .env.*
 !.env.example
 !.env.test
+!.env.template
 
 # Backup files that may contain secrets
 *.backup
