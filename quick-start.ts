@@ -5,9 +5,16 @@ import axios from 'axios';
 
 console.log(chalk.bgCyan.black('\n 🚀 USDT ARBITRAGE BOT - QUICK START \n'));
 
-// Manually set the token since dotenv seems to have issues
-process.env.TELEGRAM_BOT_TOKEN = '8070785411:AAFuGOlbn7UmB4B53mJQZey-EGaNMVKaeF0';
-process.env.TELEGRAM_CHAT_ID = '1271429958';
+// Load environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Verify required environment variables
+if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) {
+  console.error('❌ Missing required environment variables: TELEGRAM_BOT_TOKEN and/or TELEGRAM_CHAT_ID');
+  console.error('Please set them in your .env file');
+  process.exit(1);
+}
 
 async function checkServices() {
   console.log(chalk.yellow('Checking services...\n'));

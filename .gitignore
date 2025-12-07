@@ -1,10 +1,16 @@
 # Dependencies
 node_modules/
 
-# Environment
+# Environment files - NEVER commit these!
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.test
+
+# Backup files that may contain secrets
+*.backup
+.env.backup
+*.bak
 
 # Build
 dist/
@@ -29,6 +35,22 @@ coverage/
 *.sqlite
 *.db
 
-# API Keys
+# API Keys and Credentials - NEVER commit these!
 **/api-keys.json
 **/credentials.json
+**/secrets.json
+**/*.key
+**/*.pem
+
+# IP and Network Info
+.current-ip
+*.ip
+
+# Session and Auth files
+*.session
+**/sessions/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

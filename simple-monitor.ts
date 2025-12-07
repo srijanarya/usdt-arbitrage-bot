@@ -1,10 +1,18 @@
 import chalk from 'chalk';
 import axios from 'axios';
 import TelegramBot from 'node-telegram-bot-api';
+import dotenv from 'dotenv';
 
-// Hard-code the credentials for now
-const TELEGRAM_BOT_TOKEN = '8070785411:AAFuGOlbn7UmB4B53mJQZey-EGaNMVKaeF0';
-const TELEGRAM_CHAT_ID = '1271429958';
+dotenv.config();
+
+// Load credentials from environment variables
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+  console.error(chalk.red('❌ Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID in .env file'));
+  process.exit(1);
+}
 
 class SimpleArbitrageMonitor {
   private bot: TelegramBot;

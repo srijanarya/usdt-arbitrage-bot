@@ -1,6 +1,12 @@
 const https = require('https');
+require('dotenv').config();
 
-const token = '8070785411:AAFOefk109W0fUEPUDi5QWPeXJCNWFG009k';
+const token = process.env.TELEGRAM_BOT_TOKEN;
+
+if (!token) {
+  console.error('❌ TELEGRAM_BOT_TOKEN not set in .env file');
+  process.exit(1);
+}
 
 // Test 1: Direct HTTPS request
 const options = {
