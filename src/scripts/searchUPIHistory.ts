@@ -14,9 +14,13 @@ interface UPITransaction {
 }
 
 async function searchUPIPayments(): Promise<void> {
+  if (!process.env.GMAIL_EMAIL || !process.env.GMAIL_APP_PASSWORD) {
+    throw new Error('GMAIL_EMAIL and GMAIL_APP_PASSWORD must be set in .env file');
+  }
+
   const imap = new Imap({
-    user: 'srijanaryay@gmail.com',
-    password: 'dxot kzcf szve mipy',
+    user: process.env.GMAIL_EMAIL,
+    password: process.env.GMAIL_APP_PASSWORD,
     host: 'imap.gmail.com',
     port: 993,
     tls: true,

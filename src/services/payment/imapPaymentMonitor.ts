@@ -23,9 +23,13 @@ export class IMAPPaymentMonitor extends EventEmitter {
   constructor() {
     super();
     
+    if (!process.env.GMAIL_EMAIL || !process.env.GMAIL_APP_PASSWORD) {
+      throw new Error('GMAIL_EMAIL and GMAIL_APP_PASSWORD must be set in .env file');
+    }
+
     this.imap = new Imap({
-      user: process.env.GMAIL_EMAIL || 'srijanaryay@gmail.com',
-      password: process.env.GMAIL_APP_PASSWORD || 'dxot kzcf szve mipy',
+      user: process.env.GMAIL_EMAIL,
+      password: process.env.GMAIL_APP_PASSWORD,
       host: 'imap.gmail.com',
       port: 993,
       tls: true,
