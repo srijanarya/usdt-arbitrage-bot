@@ -2,7 +2,7 @@
 
 **Date:** December 7, 2024
 **Severity:** CRITICAL
-**Status:** ⚠️ CREDENTIALS MUST BE ROTATED IMMEDIATELY
+**Status:** ⚠️ GMAIL APP PASSWORD MUST BE REVOKED IMMEDIATELY
 
 ---
 
@@ -10,7 +10,33 @@
 
 A security audit revealed that **real API credentials and secrets** were hardcoded in the codebase and committed to git history. Even though these have been removed from the current files, they remain accessible in the git history of the public repository.
 
-## 🔴 Exposed Credentials (ROTATE IMMEDIATELY)
+## 🔴 MOST CRITICAL: Gmail App Password (REVOKE NOW!)
+
+### Gmail Account Access
+```
+Email: srijanaryay@gmail.com
+App Password: dxot kzcf szve mipy
+```
+
+**⚠️ THIS IS THE HIGHEST RISK - Full access to your Gmail account!**
+
+**Immediate Actions:**
+1. Go to https://myaccount.google.com/apppasswords RIGHT NOW
+2. Delete the app password `dxot kzcf szve mipy`
+3. Check for suspicious activity: https://myaccount.google.com/device-activity
+4. Review recent emails sent from your account
+5. Generate a new app password ONLY when you need Gmail integration
+6. Update `.env` file with: `GMAIL_APP_PASSWORD=new_password`
+
+**What attackers could do:**
+- Read ALL your emails (including bank statements, OTPs, password resets)
+- Send emails as you
+- Access password reset links for other services
+- Read financial/personal information
+
+---
+
+## 🟡 Other Exposed Credentials (Already Handled)
 
 ### 1. Telegram Bot Tokens
 Two bot tokens were exposed:
